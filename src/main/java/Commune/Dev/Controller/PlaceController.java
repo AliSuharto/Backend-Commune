@@ -1,6 +1,7 @@
 package Commune.Dev.Controller;
 
 import Commune.Dev.Models.Place;
+import Commune.Dev.Request.PlaceRequest;
 import Commune.Dev.Services.PlaceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/places")
+@RequestMapping("/api/public/places")
 @CrossOrigin(origins = "*")
 public class PlaceController {
 
@@ -20,9 +21,9 @@ public class PlaceController {
 
     // CREATE - Enregistrer une seule place
     @PostMapping
-    public ResponseEntity<Place> createPlace(@RequestBody Place place) {
+    public ResponseEntity<Place> createPlace(@RequestBody PlaceRequest request) {
         try {
-            Place savedPlace = placeService.save(place);
+            Place savedPlace = placeService.createPlace(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedPlace);
         } catch (Exception e) {
             e.printStackTrace(); // ⚠️ mets ça pour voir l'erreur exacte dans les logs

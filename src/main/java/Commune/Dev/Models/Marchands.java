@@ -19,7 +19,7 @@ import java.util.List;
 public class Marchands {
 
     @Id
-    @NotNull
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @NotBlank(message = "Le nom est obligatoire")
@@ -30,11 +30,15 @@ public class Marchands {
     @Size(max = 255)
     private String prenom;
 
+    @Size(max = 255)
+    private String adress;
+
+    @Size(max = 255)
+    private String description;
+
     @NotBlank(message = "Le numéro CIN est obligatoire")
     @Size(max = 255)
     private String numCIN;
-
-    private LocalDateTime dateDelivrance;
 
     @Size(max = 255)
     private String photo;
@@ -46,6 +50,18 @@ public class Marchands {
     @Pattern(regexp = "^[0-9+\\-\\s()]+$", message = "Format de téléphone invalide")
     @Size(max = 255)
     private String numTel2;
+
+    @Column(name = "date_enregistrement")
+    private LocalDateTime dateEnregistrement;
+
+    // Méthode calculée pour savoir s'il est endetté
+    @Transient
+    private Boolean estEndette;
+
+    @PrePersist
+    protected void onCreate() {
+        dateEnregistrement = LocalDateTime.now();
+    }
 
     // Relations
     @OneToMany(mappedBy = "marchand", cascade = CascadeType.ALL)

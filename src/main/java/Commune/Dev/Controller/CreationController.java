@@ -1,6 +1,6 @@
 package Commune.Dev.Controller;
 
-import Commune.Dev.Dtos.OrdonnateurDto;
+import Commune.Dev.Dtos.UserDto;
 import Commune.Dev.Request.FinalizeRequest;
 import Commune.Dev.Services.CreationService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/public")
 public class CreationController {
     private final CreationService creationService;
 
@@ -23,7 +23,7 @@ public class CreationController {
     }
 
     @PostMapping("/ordonnateur/init")
-    public ResponseEntity<?> init(@RequestBody OrdonnateurDto dto) {
+    public ResponseEntity<?> init(@RequestBody UserDto dto) {
         creationService.initOrdonnateur(dto);
         return ResponseEntity.ok(Map.of("message", "Code envoyé"));
 

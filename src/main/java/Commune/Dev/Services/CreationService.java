@@ -1,12 +1,8 @@
 package Commune.Dev.Services;
 
-import Commune.Dev.Dtos.OrdonnateurDto;
-import Commune.Dev.Models.Commune;
-import Commune.Dev.Models.Ordonnateur;
-import Commune.Dev.Models.OtpTemp;
-import Commune.Dev.Repositories.CommuneRepository;
-import Commune.Dev.Repositories.OrdonnateurRepository;
-import Commune.Dev.Repositories.OtpTempRepository;
+import Commune.Dev.Dtos.UserDto;
+import Commune.Dev.Models.*;
+import Commune.Dev.Repositories.*;
 import Commune.Dev.Request.FinalizeRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -17,25 +13,29 @@ import org.springframework.stereotype.Service;
 @Service
 public class CreationService {
     private final OtpService otpService;
-    private final OrdonnateurRepository ordRepo;
+    private final UserRepository ordRepo;
     private final CommuneRepository communeRepo;
     private final OtpTempRepository otpTempRepo;
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
+    private final UserActivityRepository userActivityRepository;
 
     @Autowired  // optional in newer Spring versions
     public CreationService(OtpService otpService,
-                           OrdonnateurRepository ordRepo,
+                           UserRepository ordRepo,
                            CommuneRepository communeRepo,
                            OtpTempRepository otpTempRepo,
                            MailService mailService,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           UserActivityRepository userActivityRepository
+                           ) {
         this.otpService = otpService;
         this.ordRepo = ordRepo;
         this.communeRepo = communeRepo;
         this.otpTempRepo = otpTempRepo;
         this.mailService = mailService;
         this.passwordEncoder = passwordEncoder;
+        this.userActivityRepository=userActivityRepository;
     }
 
 
@@ -44,7 +44,7 @@ public class CreationService {
 
 
     // Step 1: init -> generate OTP and send mail
-    public void initOrdonnateur(OrdonnateurDto dto) {
+    public void initOrdonnateur(UserDto dto) {
         // optionally: check if email already used
         if (ordRepo.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("Email déjà utilisé");
@@ -56,7 +56,7 @@ public class CreationService {
     // Step 2: finalize -> transactional creation
     @Transactional
     public void finalizeCreation(FinalizeRequest req) {
-        boolean ok = otpService.verifyCode(req.email(), req.code());
+        boolean ok = otpService.verifyCode(req.email(), req.validationCode());
         if (!ok) {
             throw new IllegalArgumentException("Code invalide ou expiré");
         }
@@ -67,19 +67,34 @@ public class CreationService {
         }
 
         // Create ordonnateur (hash password)
-        Ordonnateur o = new Ordonnateur();
+        User o = new User();
         o.setNom(req.ordonnateur().nom());
+        o.setRole(Roletype.ORDONNATEUR);
         o.setPrenom(req.ordonnateur().prenom());
         o.setEmail(req.ordonnateur().email());
         o.setPassword(passwordEncoder.encode(req.ordonnateur().password()));
+        o.setTelephone(req.ordonnateur().telephone());
         ordRepo.save(o);
 
         // Create commune
         Commune c = new Commune();
         c.setNom(req.commune().nom());
-        c.setAdresse(req.commune().adresse());
+        c.setPays(req.commune().pays());
+        c.setCodePostal(req.commune().nom());
+        c.setLocalisation(req.commune().localisation());
         c.setRegion(req.commune().region());
+        c.setTelephone(req.commune().telephone());
+        c.setMail(req.commune().mail());
         communeRepo.save(c);
+
+
+        UserActivity activity = new UserActivity();
+        activity.setUser(o);
+        activity.setLoginCount(0);
+        activity.setHasUsedApp(false);
+        activity.setFirstLogin(null);
+        activity.setLastLogin(null);
+        userActivityRepository.save(activity);
 
         // remove OTP to avoid reuse
         otpService.deleteOtp(req.email());

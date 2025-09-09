@@ -1,7 +1,11 @@
 package Commune.Dev.Services;
 
+import Commune.Dev.Dtos.ZoneResponse;
+import Commune.Dev.Models.Marchee;
 import Commune.Dev.Models.Zone;
+import Commune.Dev.Repositories.MarcheeRepository;
 import Commune.Dev.Repositories.ZoneRepository;
+import Commune.Dev.Request.ZoneRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,20 +19,45 @@ public class ZoneService {
 
     @Autowired
     private ZoneRepository zoneRepository;
-
+    @Autowired
+    private MarcheeRepository marcheeRepository;
     @Autowired
     private PlaceService placeService;
 
-    // CREATE operations
+    // =================== CREATE ===================
     public Zone save(Zone zone) {
         return zoneRepository.save(zone);
+    }
+
+    public ZoneResponse createZone(ZoneRequest request) {
+        // Vérifier que le marché existe
+        Marchee marchee = marcheeRepository.findById(request.getMarcheeId())
+                .orElseThrow(() -> new RuntimeException("Marché introuvable"));
+
+        // Créer l’entité Zone
+        Zone zone = new Zone();
+        zone.setNom(request.getNom());
+        zone.setDescription(request.getDescription());
+        zone.setMarchee(marchee);
+
+        Zone savedZone = zoneRepository.save(zone);
+
+        // Convertir en réponse
+        ZoneResponse response = new ZoneResponse();
+        response.setId(Math.toIntExact(savedZone.getId()));
+        response.setNom(savedZone.getNom());
+        response.setDescription(savedZone.getDescription());
+        response.setMarcheeId(Math.toIntExact(marchee.getId()));
+        response.setMarcheeNom(marchee.getNom());
+
+        return response;
     }
 
     public List<Zone> saveAll(List<Zone> zones) {
         return zoneRepository.saveAll(zones);
     }
 
-    // READ operations
+    // =================== READ ===================
     public List<Zone> findAll() {
         return zoneRepository.findAll();
     }
@@ -41,32 +70,32 @@ public class ZoneService {
         return zoneRepository.findAllById(ids);
     }
 
-    public List<Zone> findByIdMarchee(Integer idMarchee) {
-        return zoneRepository.findByIdMarchee(idMarchee);
+    public List<Zone> findByMarcheeId(Integer marcheeId) {
+        return zoneRepository.findByMarcheeId(marcheeId);
     }
 
     public List<Zone> findByNomContainingIgnoreCase(String nom) {
         return zoneRepository.findByNomContainingIgnoreCase(nom);
     }
 
-    public List<Zone> findByIdMarcheeAndNomContainingIgnoreCase(Integer idMarchee, String nom) {
-        return zoneRepository.findByIdMarcheeAndNomContainingIgnoreCase(idMarchee, nom);
+    public List<Zone> findByMarcheeIdAndNomContainingIgnoreCase(Integer marcheeId, String nom) {
+        return zoneRepository.findByMarcheeIdAndNomContainingIgnoreCase(marcheeId, nom);
     }
 
-    // COUNT operations
+    // =================== COUNT ===================
     public long count() {
         return zoneRepository.count();
     }
 
-    public long countByIdMarchee(Integer idMarchee) {
-        return zoneRepository.countByIdMarchee(idMarchee);
+    public long countByMarcheeId(Integer marcheeId) {
+        return zoneRepository.countByMarcheeId(marcheeId);
     }
 
     public boolean existsById(Integer id) {
         return zoneRepository.existsById(id);
     }
 
-    // DELETE operations
+    // =================== DELETE ===================
     public void deleteById(Integer id) {
         zoneRepository.deleteById(id);
     }
@@ -83,15 +112,15 @@ public class ZoneService {
         zoneRepository.deleteAllById(ids);
     }
 
-    public void deleteByIdMarchee(Integer idMarchee) {
-        zoneRepository.deleteByIdMarchee(idMarchee);
+    public void deleteByMarcheeId(Integer marcheeId) {
+        zoneRepository.deleteByMarcheeId(marcheeId);
     }
 
     public void deleteAll() {
         zoneRepository.deleteAll();
     }
 
-    // Custom business methods
+    // =================== CUSTOM BUSINESS METHODS ===================
     public Map<String, Object> getZoneStatistics(Integer zoneId) {
         Map<String, Object> stats = new HashMap<>();
 
@@ -99,34 +128,32 @@ public class ZoneService {
         if (zoneOpt.isPresent()) {
             Zone zone = zoneOpt.get();
 
-            // Statistiques de base
+            // Infos de base
             stats.put("zoneId", zoneId);
             stats.put("zoneName", zone.getNom());
             stats.put("zoneDescription", zone.getDescription());
-            stats.put("marcheeId", zone.getIdMarchee());
+            stats.put("marcheeId", zone.getMarchee() != null ? zone.getMarchee().getId() : null);
 
-            // Statistiques des places dans cette zone
+            // Stats des places
             long totalPlaces = placeService.countPlacesByZoneId(zoneId);
             long availablePlaces = placeService.countAvailablePlacesByZoneId(zoneId);
             long occupiedPlaces = totalPlaces - availablePlaces;
-
-            double occupationRate = totalPlaces > 0 ?
-                    (double) occupiedPlaces / totalPlaces * 100 : 0.0;
+            double occupationRate = totalPlaces > 0 ? (double) occupiedPlaces / totalPlaces * 100 : 0.0;
 
             stats.put("totalPlaces", totalPlaces);
             stats.put("availablePlaces", availablePlaces);
             stats.put("occupiedPlaces", occupiedPlaces);
             stats.put("occupationRate", Math.round(occupationRate * 100.0) / 100.0);
 
-            // Nombre de salles dans cette zone (si relation existe)
-            stats.put("totalSalles", zone.getSalles() != null ? zone.getSalles().size() : 0);
+            // Nombre de halls
+            stats.put("totalSalles", zone.getHalls() != null ? zone.getHalls().size() : 0);
         }
 
         return stats;
     }
 
-    public List<Zone> getZonesByMarcheeWithPlaceCount(Integer idMarchee) {
-        return zoneRepository.findByIdMarcheeWithPlaceCount(idMarchee);
+    public List<Zone> getZonesByMarcheeWithPlaceCount(Integer marcheeId) {
+        return zoneRepository.findByMarcheeIdWithPlaceCount(marcheeId);
     }
 
     public boolean hasPlaces(Integer zoneId) {
@@ -135,6 +162,6 @@ public class ZoneService {
 
     public boolean hasSalles(Integer zoneId) {
         Optional<Zone> zone = findById(zoneId);
-        return zone.isPresent() && zone.get().getSalles() != null && !zone.get().getSalles().isEmpty();
+        return zone.isPresent() && zone.get().getHalls() != null && !zone.get().getHalls().isEmpty();
     }
 }

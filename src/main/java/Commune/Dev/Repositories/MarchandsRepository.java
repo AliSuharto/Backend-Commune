@@ -5,19 +5,31 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface MarchandsRepository extends JpaRepository<Marchands, Integer> {
 
-    Optional<Marchands> findByNumCIN(String numCIN);
-
+    // Recherche par nom (insensible à la casse)
     List<Marchands> findByNomContainingIgnoreCase(String nom);
 
+    // Recherche par prénom (insensible à la casse)
     List<Marchands> findByPrenomContainingIgnoreCase(String prenom);
 
-    @Query("SELECT m FROM Marchands m WHERE m.nom LIKE %:nom% AND m.prenom LIKE %:prenom%")
-    List<Marchands> findByNomAndPrenom(@Param("nom") String nom, @Param("prenom") String prenom);
-}
+    // Recherche par nom ou prénom
+    @Query("SELECT m FROM Marchands m WHERE " +
+            "LOWER(m.nom) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(m.prenom) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Marchands> findByNomOrPrenomContaining(@Param("searchTerm") String searchTerm);
 
+    // Marchands qui ont des places associées
+    @Query("SELECT DISTINCT m FROM Marchands m WHERE m.places IS NOT EMPTY")
+    List<Marchands> findMarchandsWithPlaces();
+
+    // Recherche par numéro CIN
+    Marchands findByNumCIN(String numCIN);
+
+    // Vérifier si le CIN existe déjà
+    boolean existsByNumCIN(String numCIN);
+}

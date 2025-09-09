@@ -1,5 +1,6 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,6 +22,8 @@ public class Place {
     @Column(name = "nom")
     private String nom;
 
+
+
     @Column(name = "adresse")
     private String adresse;
 
@@ -35,25 +38,24 @@ public class Place {
 
     // Relations
     @ManyToOne(fetch = FetchType.LAZY)
-    //@JoinColumn(name = "id_marchee", insertable = false, updatable = false)
-    @JoinColumn(name = "id_marchee")
+    @JoinColumn(name = "marchee_id", nullable = true)
+    @JsonBackReference("marchee-places")
     private Marchee marchee;
 
+    // Relation ManyToOne vers Zone (optionnelle)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_marchands")
-    private Marchands marchands;
-
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_zone")
+    @JoinColumn(name = "zone_id", nullable = true)
+    @JsonBackReference("zone-places")
     private Zone zone;
 
+    // Relation ManyToOne vers Hall (optionnelle)
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_hall")
-    private Salle salle;
+    @JoinColumn(name = "hall_id", nullable = true)
+    @JsonBackReference("hall-places")
+    private Halls hall;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categorie_id")
+    @JoinColumn(name = "categorie_id", nullable = true)
     private Categorie categorie;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL)
@@ -62,5 +64,8 @@ public class Place {
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL)
     private List<HistoriqueChangementCategorie> historiqueChangements;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_marchands", nullable = true)
+    private Marchands marchands;
 }
 

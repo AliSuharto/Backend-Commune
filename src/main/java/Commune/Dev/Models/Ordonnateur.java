@@ -20,26 +20,16 @@ public class Ordonnateur {
 
     private String nom;
 
-    public void setNom(String nom) {
-        this.nom = nom;
-    }
+
 
     private String prenom;
 
-    public void setPrenom(String prenom) {
-        this.prenom = prenom;
-    }
+
 
     @Column(unique = true, nullable = false)
     private String email;
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
 
     @Column(nullable = false)
     private String password; // hashée

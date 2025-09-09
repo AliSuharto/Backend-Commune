@@ -1,92 +1,284 @@
 package Commune.Dev.Controller;
 
-
-import Commune.Dev.Dtos.MarchandsRequestDTO;
-import Commune.Dev.Dtos.MarchandsResponseDTO;
+import Commune.Dev.Models.Marchands;
 import Commune.Dev.Services.MarchandsService;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import jakarta.validation.Valid;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/marchands")
-@RequiredArgsConstructor
+@RequestMapping("/api/public/marchands")
 @CrossOrigin(origins = "*")
+@Validated
 public class MarchandsController {
 
-    private final MarchandsService marchandsService;
+    @Autowired
+    private MarchandsService marchandsService;
 
-    @PostMapping("/post")
-    public ResponseEntity<?> creerMarchand(@Valid @RequestBody MarchandsRequestDTO marchandDTO) {
-        try {
-            MarchandsResponseDTO marchandCree = marchandsService.creerMarchand(marchandDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body(marchandCree);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("erreur", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("erreur", "Erreur interne: " + e.getMessage()));
-        }
-    }
-
-    @PostMapping("/test")
-    public ResponseEntity<String> testPost(@RequestBody String data) {
-
-        return ResponseEntity.ok("POST fonctionne ! Data reçue: " + data);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<MarchandsResponseDTO> obtenirMarchand(@PathVariable Integer id) {
-        return marchandsService.obtenirMarchandParId(id)
-                .map(marchand -> ResponseEntity.ok(marchand))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/cin/{numCIN}")
-    public ResponseEntity<MarchandsResponseDTO> obtenirMarchandParCIN(@PathVariable String numCIN) {
-        return marchandsService.obtenirMarchandParCIN(numCIN)
-                .map(marchand -> ResponseEntity.ok(marchand))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
+    // Obtenir tous les marchands
     @GetMapping
-    public ResponseEntity<List<MarchandsResponseDTO>> obtenirTousLesMarchands() {
-        List<MarchandsResponseDTO> marchands = marchandsService.obtenirTousLesMarchands();
-        return ResponseEntity.ok(marchands);
-    }
-
-    @GetMapping("/recherche")
-    public ResponseEntity<List<MarchandsResponseDTO>> rechercherMarchands(@RequestParam String nom) {
-        List<MarchandsResponseDTO> marchands = marchandsService.rechercherMarchandsParNom(nom);
-        return ResponseEntity.ok(marchands);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<MarchandsResponseDTO> mettreAJourMarchand(
-            @PathVariable Integer id,
-            @Valid @RequestBody MarchandsRequestDTO marchandDTO) {
+    public ResponseEntity<List<Marchands>> getAllMarchands() {
         try {
-            MarchandsResponseDTO marchandMisAJour = marchandsService.mettreAJourMarchand(id, marchandDTO);
-            return ResponseEntity.ok(marchandMisAJour);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.notFound().build();
+            List<Marchands> marchands = marchandsService.getAllMarchands();
+            return ResponseEntity.ok(marchands);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> supprimerMarchand(@PathVariable Integer id) {
-        boolean supprime = marchandsService.supprimerMarchand(id);
-        return supprime ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
+    // Obtenir les marchands avec places
+    @GetMapping("/with-places")
+    public ResponseEntity<List<Marchands>> getMarchandsWithPlaces() {
+        try {
+            List<Marchands> marchands = marchandsService.getMarchandsWithPlaces();
+            return ResponseEntity.ok(marchands);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    @GetMapping("/{id}/existe")
-    public ResponseEntity<Boolean> marchandExiste(@PathVariable Integer id) {
-        boolean existe = marchandsService.marchandExiste(id);
-        return ResponseEntity.ok(existe);
+    // Rechercher un marchand par ID
+    @GetMapping("/{id}")
+    public ResponseEntity<Marchands> getMarchandById(@PathVariable Integer id) {
+        try {
+            Optional<Marchands> marchand = marchandsService.getMarchandById(id);
+            return marchand.map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Rechercher des marchands par nom/prénom
+    @GetMapping("/search")
+    public ResponseEntity<List<Marchands>> searchMarchands(@RequestParam String q) {
+        try {
+            if (q == null || q.trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+            List<Marchands> marchands = marchandsService.searchMarchands(q.trim());
+            return ResponseEntity.ok(marchands);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Rechercher par numéro CIN
+    @GetMapping("/cin/{numCIN}")
+    public ResponseEntity<Marchands> getMarchandByNumCIN(@PathVariable String numCIN) {
+        try {
+            Marchands marchand = marchandsService.getMarchandByNumCIN(numCIN);
+            return marchand != null ? ResponseEntity.ok(marchand) : ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // Créer un nouveau marchand avec photo optionnelle
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<?> createMarchand(
+            @RequestParam("nom") String nom,
+            @RequestParam("prenom") String prenom,
+            @RequestParam("numCIN") String numCIN,
+            @RequestParam(value = "numTel1", required = false) String numTel1,
+            @RequestParam(value = "numTel2", required = false) String numTel2,
+            @RequestParam(value = "adress", required = false) String adress,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "photo", required = false) MultipartFile photo) {
+
+        try {
+            // Créer l'objet Marchands
+            Marchands marchand = new Marchands();
+            marchand.setNom(nom);
+            marchand.setPrenom(prenom);
+            marchand.setNumCIN(numCIN);
+            marchand.setNumTel1(numTel1);
+            marchand.setNumTel2(numTel2);
+            marchand.setAdress(adress);
+            marchand.setDescription(description);
+
+            // Sauvegarder avec photo
+            Marchands savedMarchand = marchandsService.saveMarchandWithPhoto(marchand, photo);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Marchand créé avec succès");
+            response.put("marchand", savedMarchand);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Erreur lors de la création du marchand: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // Importer des marchands depuis un fichier Excel
+    @PostMapping("/import/excel")
+    public ResponseEntity<?> importMarchandsFromExcel(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file.isEmpty()) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Le fichier ne peut pas être vide");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // Vérifier l'extension du fichier
+            String filename = file.getOriginalFilename();
+            if (filename == null || (!filename.endsWith(".xlsx") && !filename.endsWith(".xls"))) {
+                Map<String, Object> response = new HashMap<>();
+                response.put("success", false);
+                response.put("message", "Format de fichier non supporté. Utilisez .xlsx ou .xls");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            List<Marchands> importedMarchands = marchandsService.importFromExcel(file);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", importedMarchands.size() + " marchands importés avec succès");
+            response.put("importedCount", importedMarchands.size());
+            response.put("marchands", importedMarchands);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Erreur lors de l'importation: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // Mettre à jour un marchand
+    @PutMapping(value = "/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<?> updateMarchand(
+            @PathVariable Integer id,
+            @RequestParam("nom") String nom,
+            @RequestParam("prenom") String prenom,
+            @RequestParam("numCIN") String numCIN,
+            @RequestParam(value = "numTel1", required = false) String numTel1,
+            @RequestParam(value = "numTel2", required = false) String numTel2,
+            @RequestParam(value = "photo", required = false) MultipartFile photo) {
+
+        try {
+            // Créer l'objet avec les nouvelles données
+            Marchands marchandDetails = new Marchands();
+            marchandDetails.setNom(nom);
+            marchandDetails.setPrenom(prenom);
+            marchandDetails.setNumCIN(numCIN);
+            marchandDetails.setNumTel1(numTel1);
+            marchandDetails.setNumTel2(numTel2);
+
+            Marchands updatedMarchand = marchandsService.updateMarchand(id, marchandDetails, photo);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Marchand mis à jour avec succès");
+            response.put("marchand", updatedMarchand);
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Erreur lors de la mise à jour: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // Supprimer un marchand
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteMarchand(@PathVariable Integer id) {
+        try {
+            marchandsService.deleteMarchand(id);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Marchand supprimé avec succès");
+
+            return ResponseEntity.ok(response);
+
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+
+        } catch (Exception e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Erreur lors de la suppression: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    // Servir les photos des marchands
+    @GetMapping("/photos/{filename}")
+    public ResponseEntity<Resource> getPhoto(@PathVariable String filename) {
+        try {
+            Path photoPath = marchandsService.getPhotoPath(filename);
+
+            if (photoPath == null || !Files.exists(photoPath)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Resource resource = new UrlResource(photoPath.toUri());
+
+            if (resource.exists() && resource.isReadable()) {
+                // Déterminer le type de contenu
+                String contentType = Files.probeContentType(photoPath);
+                if (contentType == null) {
+                    contentType = "application/octet-stream";
+                }
+
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

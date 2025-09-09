@@ -15,6 +15,7 @@ public class SalleUpdateDTO {
 
     @Size(max = 500, message = "La description ne doit pas dépasser 500 caractères")
     private String description;
+    private String codeUnique;
 
     // Soit directement dans un marché, soit dans une zone
     private Integer marcheeId;  // Pour salle directement dans le marché  

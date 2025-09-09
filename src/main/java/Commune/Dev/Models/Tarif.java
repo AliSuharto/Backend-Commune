@@ -26,8 +26,6 @@ public class Tarif {
     private BigDecimal montant;
 
     // Relations
-    @OneToMany(mappedBy = "tarif", cascade = CascadeType.ALL)
-    private List<Categorie> categories;
 
     public enum TypePeriodicite {
         Journalier, Mensuel, Hebdomadaire

@@ -3,8 +3,14 @@ package Commune.Dev.Services;
 import Commune.Dev.Models.Marchee;
 import Commune.Dev.Models.Zone;
 import Commune.Dev.Models.Place;
-import Commune.Dev.Models.Salle;
+import Commune.Dev.Models.Halls;
+import Commune.Dev.Repositories.HallsRepository;
 import Commune.Dev.Repositories.MarcheeRepository;
+import Commune.Dev.Repositories.PlaceRepository;
+import Commune.Dev.Repositories.ZoneRepository;
+import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -15,6 +21,15 @@ import java.util.*;
 public class MarcheeService {
 
     @Autowired
+    private ZoneRepository zoneRepository;
+
+    @Autowired
+    private HallsRepository hallRepository;
+
+    @Autowired
+    private PlaceRepository placeRepository;
+
+    @Autowired
     private MarcheeRepository marcheeRepository;
 
     @Autowired
@@ -22,21 +37,83 @@ public class MarcheeService {
 
     @Autowired
     private PlaceService placeService;
+    private static final Logger logger = LoggerFactory.getLogger(MarcheeService.class);
 
     // CREATE operations
+    @Transactional
     public ResponseEntity<String> save(Marchee marchee) {
-        // Vérifier si le marché existe déjà par nom et adresse
-        if (marcheeRepository.existsByNomAndAdresse(marchee.getNom(), marchee.getAdresse())) {
-            return ResponseEntity.badRequest()
-                    .body("Ce marché existe déjà avec le nom '" + marchee.getNom() +
-                            "' et l'adresse '" + marchee.getAdresse() + "'. Il est déjà enregistré.");
+        try {
+            logger.info("Début de l'enregistrement du marché : nom={}, adresse={}",
+                    marchee.getNom(), marchee.getAdresse());
+
+            // Vérifier si le marché existe déjà
+            if (marcheeRepository.existsByNomAndAdresse(marchee.getNom(), marchee.getAdresse())) {
+                String message = "Ce marché existe déjà avec le nom '" + marchee.getNom() +
+                        "' et l'adresse '" + marchee.getAdresse() + "'";
+                logger.warn(message);
+                return ResponseEntity.badRequest().body(message);
+            }
+
+            // Préparer les relations AVANT de sauvegarder
+            if (marchee.getZones() != null) {
+                for (Zone zone : marchee.getZones()) {
+                    zone.setMarchee(marchee);
+
+                    if (zone.getHalls() != null) {
+                        for (Halls hall : zone.getHalls()) {
+                            hall.setMarchee(marchee);
+                            hall.setZone(zone);
+
+                            if (hall.getPlaces() != null) {
+                                for (Place place : hall.getPlaces()) {
+                                    place.setMarchee(marchee);
+                                    place.setZone(zone);
+                                    place.setHall(hall);
+                                }
+                            }
+                        }
+                    }
+
+                    if (zone.getPlaces() != null) {
+                        for (Place place : zone.getPlaces()) {
+                            place.setMarchee(marchee);
+                            place.setZone(zone);
+                        }
+                    }
+                }
+            }
+
+            if (marchee.getHalls() != null) {
+                for (Halls hall : marchee.getHalls()) {
+                    hall.setMarchee(marchee);
+
+                    if (hall.getPlaces() != null) {
+                        for (Place place : hall.getPlaces()) {
+                            place.setMarchee(marchee);
+                            place.setHall(hall);
+                        }
+                    }
+                }
+            }
+
+            if (marchee.getPlaces() != null) {
+                for (Place place : marchee.getPlaces()) {
+                    place.setMarchee(marchee);
+                }
+            }
+
+            // UNE SEULE sauvegarde : le marché avec cascade
+            Marchee savedMarchee = marcheeRepository.save(marchee);
+
+            logger.info("Enregistrement du marché '{}' terminé avec succès.", savedMarchee.getNom());
+            return ResponseEntity.ok("Marché enregistré avec succès.");
+
+        } catch (Exception ex) {
+            logger.error("Erreur lors de l'enregistrement du marché '{}': {}",
+                    marchee.getNom(), ex.getMessage(), ex);
+            return ResponseEntity.status(500).body("Erreur lors de l'enregistrement du marché: " + ex.getMessage());
         }
-
-        // Si n'existe pas, enregistrer le nouveau marché
-        marcheeRepository.save(marchee);
-        return ResponseEntity.ok("Marché enregistré avec succès.");
     }
-
 
     public ResponseEntity<Map<String, Object>> saveAll(List<Marchee> marchees) {
         List<Marchee> marcheesToSave = new ArrayList<>();
@@ -74,7 +151,8 @@ public class MarcheeService {
     }
 
     // READ operations
-    public List<Marchee> findAll() {
+    public List<Marchee> findAll()
+    {
         return marcheeRepository.findAll();
     }
 
@@ -151,7 +229,7 @@ public class MarcheeService {
             stats.put("declaredCapacity", marchee.getNbrPlace());
 
             // Statistiques des zones
-            long totalZones = zoneService.countByIdMarchee(marcheeId);
+            long totalZones = zoneService.countByMarcheeId(marcheeId);
             stats.put("totalZones", totalZones);
 
             // Statistiques des places
@@ -172,22 +250,22 @@ public class MarcheeService {
             stats.put("capacityUtilization", Math.round(capacityUtilization * 100.0) / 100.0);
 
             // Statistiques des salles
-            List<Salle> salles = marchee.getSalles();
-            long totalSalles = salles != null ? salles.size() : 0;
+            List<Halls> halls = marchee.getHalls();
+            long totalSalles = halls != null ? halls.size() : 0;
             stats.put("totalSalles", totalSalles);
 
             // Analyse comparative
             stats.put("isOverCapacity", totalPlaces > (marchee.getNbrPlace() != null ? marchee.getNbrPlace() : 0));
             stats.put("isUnderUtilized", occupationRate < 50.0);
             stats.put("hasZones", totalZones > 0);
-            stats.put("hasSalles", totalSalles > 0);
+            stats.put("hasHalls", totalSalles > 0);
         }
 
         return stats;
     }
 
     public List<Zone> getZonesByMarcheeId(Integer marcheeId) {
-        return zoneService.findByIdMarchee(marcheeId);
+        return zoneService.findByMarcheeId(marcheeId);
     }
 
     public List<Place> getPlacesByMarcheeId(Integer marcheeId) {
@@ -195,9 +273,9 @@ public class MarcheeService {
         return marchee.map(Marchee::getPlaces).orElse(List.of());
     }
 
-    public List<Salle> getSallesByMarcheeId(Integer marcheeId) {
+    public List<Halls> getSallesByMarcheeId(Integer marcheeId) {
         Optional<Marchee> marchee = findById(marcheeId);
-        return marchee.map(Marchee::getSalles).orElse(List.of());
+        return marchee.map(Marchee::getHalls).orElse(List.of());
     }
 
     public Map<String, Object> getGlobalStatistics() {
@@ -288,7 +366,7 @@ public class MarcheeService {
 
     // Méthodes utilitaires
     public boolean hasZones(Integer marcheeId) {
-        return zoneService.countByIdMarchee(marcheeId) > 0;
+        return zoneService.countByMarcheeId(marcheeId) > 0;
     }
 
     public boolean hasAvailablePlaces(Integer marcheeId) {

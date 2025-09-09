@@ -20,5 +20,5 @@ public class SalleResponseDTO {
 
     // Informations sur le type d'emplacement
     private String emplacementType; // "MARCHE_DIRECT" ou "ZONE"
-    private Long nbPlaces;
+    private Long nbrPlaces;
 }

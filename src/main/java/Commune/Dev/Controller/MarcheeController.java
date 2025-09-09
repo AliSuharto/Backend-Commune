@@ -4,9 +4,11 @@ import Commune.Dev.Services.MarcheeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -21,17 +23,11 @@ public class MarcheeController {
 
     // CREATE - Enregistrer un seul marché
     @PostMapping
-    public ResponseEntity<ResponseEntity<String>> createMarchee(@RequestBody Marchee marchee) {
-        try {
-            ResponseEntity<String> savedMarchee = marcheeService.save(marchee);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedMarchee);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+//    @PreAuthorize("hasAnyRole('CREATEUR_MARCHE', 'DIRECTEUR')")
+    public ResponseEntity<String> createMarchee(@RequestBody Marchee marchee) {
+        return marcheeService.save(marchee);
+
     }
-
-
-
 
     // CREATE - Enregistrer plusieurs marchés en même temps
     @PostMapping("/batch")
@@ -50,6 +46,7 @@ public class MarcheeController {
     public ResponseEntity<List<Marchee>> getAllMarchees() {
         try {
             List<Marchee> marchees = marcheeService.findAll();
+
             return ResponseEntity.ok(marchees);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -61,6 +58,7 @@ public class MarcheeController {
     public ResponseEntity<Marchee> getMarcheeById(@PathVariable Integer id) {
         try {
             Optional<Marchee> marchee = marcheeService.findById(id);
+            System.out.println("ID reçu : " + id);
             return marchee.map(ResponseEntity::ok)
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
@@ -237,59 +235,59 @@ public class MarcheeController {
     }
 
     // Endpoint pour vérifier si un marché existe
-    @GetMapping("/{id}/exists")
-    public ResponseEntity<Boolean> marcheeExists(@PathVariable Integer id) {
-        try {
-            boolean exists = marcheeService.existsById(id);
-            return ResponseEntity.ok(exists);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    // Statistiques complètes d'un marché
-    @GetMapping("/{id}/stats")
-    public ResponseEntity<Map<String, Object>> getMarcheeStats(@PathVariable Integer id) {
-        try {
-            Map<String, Object> stats = marcheeService.getMarcheeStatistics(id);
-            if (stats.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    // Récupérer toutes les zones d'un marché
-    @GetMapping("/{id}/zones")
-    public ResponseEntity<Object> getMarcheeZones(@PathVariable Integer id) {
-        try {
-            return ResponseEntity.ok(marcheeService.getZonesByMarcheeId(id));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    // Récupérer toutes les places d'un marché
-    @GetMapping("/{id}/places")
-    public ResponseEntity<Object> getMarcheePlaces(@PathVariable Integer id) {
-        try {
-            return ResponseEntity.ok(marcheeService.getPlacesByMarcheeId(id));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    // Récupérer toutes les salles d'un marché
-    @GetMapping("/{id}/salles")
-    public ResponseEntity<Object> getMarcheeSalles(@PathVariable Integer id) {
-        try {
-            return ResponseEntity.ok(marcheeService.getSallesByMarcheeId(id));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+//    @GetMapping("/{id}/exists")
+//    public ResponseEntity<Boolean> marcheeExists(@PathVariable Integer id) {
+//        try {
+//            boolean exists = marcheeService.existsById(id);
+//            return ResponseEntity.ok(exists);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
+//
+//    // Statistiques complètes d'un marché
+//    @GetMapping("/{id}/stats")
+//    public ResponseEntity<Map<String, Object>> getMarcheeStats(@PathVariable Integer id) {
+//        try {
+//            Map<String, Object> stats = marcheeService.getMarcheeStatistics(id);
+//            if (stats.isEmpty()) {
+//                return ResponseEntity.notFound().build();
+//            }
+//            return ResponseEntity.ok(stats);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
+//
+//    // Récupérer toutes les zones d'un marché
+//    @GetMapping("/{id}/zones")
+//    public ResponseEntity<Object> getMarcheeZones(@PathVariable Integer id) {
+//        try {
+//            return ResponseEntity.ok(marcheeService.getZonesByMarcheeId(id));
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
+//
+//    // Récupérer toutes les places d'un marché
+//    @GetMapping("/{id}/places")
+//    public ResponseEntity<Object> getMarcheePlaces(@PathVariable Integer id) {
+//        try {
+//            return ResponseEntity.ok(marcheeService.getPlacesByMarcheeId(id));
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
+//
+//    // Récupérer toutes les salles d'un marché
+//    @GetMapping("/{id}/salles")
+//    public ResponseEntity<Object> getMarcheeSalles(@PathVariable Integer id) {
+//        try {
+//            return ResponseEntity.ok(marcheeService.getSallesByMarcheeId(id));
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
 
     // Statistiques globales de tous les marchés
     @GetMapping("/global-stats")

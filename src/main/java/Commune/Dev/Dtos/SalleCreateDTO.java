@@ -20,7 +20,10 @@ public class SalleCreateDTO {
 
     // Soit directement dans un marché, soit dans une zone (qui appartient à un marché)
     private Integer marcheeId;  // Pour salle directement dans le marché
-    private Integer zoneId;     // Pour salle dans une zone
+    private Integer zoneId;
+    private String codeUnique;
+
+    // Pour salle dans une zone
 
     // Validation: une salle doit être soit dans un marché, soit dans une zone, mais pas les deux
     public boolean isValid() {

@@ -1,11 +1,15 @@
 package Commune.Dev.Models;
 
 public enum Roletype {
-    ORDONNATEUR,
-    PERCEPTEUR_PRINCIPAL,
-    PERCEPTEUR,
-    REGISSEUR,
-    RESPONSABLE_MARCHE
+        ORDONNATEUR,
+        DIRECTEUR,
+        PERCEPTEUR,
+        CREATEUR_MARCHE,
+        REGISSEUR_MOBILE,
+        REGISSEUR_FIXE,
+        REGISSEUR,
+        REGISSEUR_PRINCIPAL
+
 }
 
 

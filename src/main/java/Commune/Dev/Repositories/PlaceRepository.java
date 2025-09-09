@@ -12,8 +12,25 @@ import java.util.List;
 @Repository
 public interface PlaceRepository extends JpaRepository<Place, Integer> {
 
+
+
+    List<Place> findByMarcheeId(Long marcheeId);
+    List<Place> findByHallId(Long hallId);
+    List<Place> findByZoneId(Long zoneId);
+
+    // Méthodes pour vérifier l'existence d'une place avec un parent spécifique
+    boolean existsByMarcheeIdAndNom(Long marcheeId, String nom);
+    boolean existsByHallIdAndNom(Long hallId, String nom);
+    boolean existsByZoneIdAndNom(Long zoneId, String nom);
+
+
+
+
+
+
     // Recherche par nom (insensible à la casse)
     List<Place> findByNomContainingIgnoreCase(String nom);
+
 
     // Recherche par adresse (insensible à la casse)
     List<Place> findByAdresseContainingIgnoreCase(String adresse);
@@ -50,8 +67,8 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
     List<Place> findByMarchandId(@Param("marchandId") Integer marchandId);
 
     // Trouver les places par salle
-    @Query("SELECT p FROM Place p WHERE p.salle.id = :salleId")
-    List<Place> findBySalleId(@Param("salleId") Integer salleId);
+    @Query("SELECT p FROM Place p WHERE p.hall.id = :hallId")
+    List<Place> findBySalleId(@Param("hallId") Integer hallId);
 
     // Trouver les places par catégorie
     @Query("SELECT p FROM Place p WHERE p.categorie.id = :categorieId")

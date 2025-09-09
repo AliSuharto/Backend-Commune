@@ -1,6 +1,7 @@
 package Commune.Dev.Repositories;
 
 import Commune.Dev.Models.Marchee;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +14,9 @@ public interface MarcheeRepository extends JpaRepository<Marchee, Integer> {
 
     // Recherche par nom (insensible à la casse)
     List<Marchee> findByNomContainingIgnoreCase(String nom);
+
+//    @EntityGraph(attributePaths = {"zones", "halls"})
+    List<Marchee> findAll();
 
     // Recherche par adresse (insensible à la casse)
     List<Marchee> findByAdresseContainingIgnoreCase(String adresse);
@@ -80,11 +84,11 @@ public interface MarcheeRepository extends JpaRepository<Marchee, Integer> {
             "COUNT(DISTINCT CASE WHEN p.isOccuped = true THEN p.id END) as occupiedPlaces, " +
             "COUNT(DISTINCT CASE WHEN p.isOccuped = false OR p.isOccuped IS NULL THEN p.id END) as availablePlaces, " +
             "COUNT(DISTINCT z.id) as totalZones, " +
-            "COUNT(DISTINCT s.id) as totalSalles " +
+            "COUNT(DISTINCT s.id) as totalHalls " +
             "FROM Marchee m " +
             "LEFT JOIN m.places p " +
             "LEFT JOIN m.zones z " +
-            "LEFT JOIN m.salles s " +
+            "LEFT JOIN m.halls s " +
             "GROUP BY m.id, m.nom")
     List<Object[]> getMarcheeStatistics();
 
@@ -136,8 +140,8 @@ public interface MarcheeRepository extends JpaRepository<Marchee, Integer> {
     List<Marchee> findMarcheesWithoutPlaces();
 
     // Trouver les marchés sans salles
-    @Query("SELECT m FROM Marchee m WHERE m.salles IS EMPTY OR m.salles IS NULL")
-    List<Marchee> findMarcheesWithoutSalles();
+    @Query("SELECT m FROM Marchee m WHERE m.halls IS EMPTY OR m.halls IS NULL")
+    List<Marchee> findMarcheesWithoutHalls();
 
     // Recherche multicritère
     @Query("SELECT m FROM Marchee m WHERE " +

@@ -1,6 +1,8 @@
 package Commune.Dev.Controller;
 
+import Commune.Dev.Dtos.ZoneResponse;
 import Commune.Dev.Models.Zone;
+import Commune.Dev.Request.ZoneRequest;
 import Commune.Dev.Services.ZoneService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/zones")
+@RequestMapping("/api/public/zones")
 @CrossOrigin(origins = "*")
 public class ZoneController {
 
@@ -20,17 +22,8 @@ public class ZoneController {
 
     // CREATE - Enregistrer une seule zone
     @PostMapping
-    public ResponseEntity<Zone> createZone(@RequestBody Zone zone) {
-        try {
-            // Vérifier que idMarchee est fourni
-            if (zone.getIdMarchee() == null) {
-                return ResponseEntity.badRequest().build();
-            }
-            Zone savedZone = zoneService.save(zone);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedZone);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+    public ZoneResponse createZone(@RequestBody ZoneRequest request) {
+        return zoneService.createZone(request);
     }
 
     // CREATE - Enregistrer plusieurs zones en même temps
@@ -39,7 +32,7 @@ public class ZoneController {
         try {
             // Vérifier que toutes les zones ont un idMarchee
             for (Zone zone : zones) {
-                if (zone.getIdMarchee() == null) {
+                if (zone.getMarchee() == null) {
                     return ResponseEntity.badRequest().build();
                 }
             }
@@ -88,7 +81,7 @@ public class ZoneController {
     @GetMapping("/marchee/{marcheeId}")
     public ResponseEntity<List<Zone>> getZonesByMarcheeId(@PathVariable Integer marcheeId) {
         try {
-            List<Zone> zones = zoneService.findByIdMarchee(marcheeId);
+            List<Zone> zones = zoneService.findByMarcheeId(marcheeId);
             return ResponseEntity.ok(zones);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -112,7 +105,7 @@ public class ZoneController {
             @PathVariable Integer marcheeId,
             @RequestParam String nom) {
         try {
-            List<Zone> zones = zoneService.findByIdMarcheeAndNomContainingIgnoreCase(marcheeId, nom);
+            List<Zone> zones = zoneService.findByMarcheeIdAndNomContainingIgnoreCase(marcheeId, nom);
             return ResponseEntity.ok(zones);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -124,7 +117,7 @@ public class ZoneController {
     public ResponseEntity<Zone> updateZone(@PathVariable Integer id, @RequestBody Zone zoneDetails) {
         try {
             // Vérifier que idMarchee est fourni
-            if (zoneDetails.getIdMarchee() == null) {
+            if (zoneDetails.getMarchee() == null) {
                 return ResponseEntity.badRequest().build();
             }
 
@@ -135,7 +128,7 @@ public class ZoneController {
                 // Mise à jour des champs
                 zone.setNom(zoneDetails.getNom());
                 zone.setDescription(zoneDetails.getDescription());
-                zone.setIdMarchee(zoneDetails.getIdMarchee());
+                zone.setMarchee(zoneDetails.getMarchee());
 
                 Zone updatedZone = zoneService.save(zone);
                 return ResponseEntity.ok(updatedZone);
@@ -153,7 +146,7 @@ public class ZoneController {
         try {
             // Vérifier que toutes les zones ont un idMarchee
             for (Zone zone : zones) {
-                if (zone.getIdMarchee() == null) {
+                if (zone.getMarchee() == null) {
                     return ResponseEntity.badRequest().build();
                 }
             }
@@ -179,8 +172,8 @@ public class ZoneController {
                 if (zonePartial.getDescription() != null) {
                     zone.setDescription(zonePartial.getDescription());
                 }
-                if (zonePartial.getIdMarchee() != null) {
-                    zone.setIdMarchee(zonePartial.getIdMarchee());
+                if (zonePartial.getMarchee() != null) {
+                    zone.setMarchee(zonePartial.getMarchee());
                 }
 
                 Zone updatedZone = zoneService.save(zone);
@@ -223,7 +216,7 @@ public class ZoneController {
     @DeleteMapping("/marchee/{marcheeId}")
     public ResponseEntity<Void> deleteZonesByMarcheeId(@PathVariable Integer marcheeId) {
         try {
-            zoneService.deleteByIdMarchee(marcheeId);
+            zoneService.deleteByMarcheeId(marcheeId);
             return ResponseEntity.noContent().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -245,7 +238,7 @@ public class ZoneController {
     @GetMapping("/marchee/{marcheeId}/count")
     public ResponseEntity<Long> countZonesInMarchee(@PathVariable Integer marcheeId) {
         try {
-            long count = zoneService.countByIdMarchee(marcheeId);
+            long count = zoneService.countByMarcheeId(marcheeId);
             return ResponseEntity.ok(count);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();

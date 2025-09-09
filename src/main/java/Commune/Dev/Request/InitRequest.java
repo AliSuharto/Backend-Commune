@@ -1,6 +1,6 @@
 package Commune.Dev.Request;
 
-import Commune.Dev.Dtos.OrdonnateurDto;
+import Commune.Dev.Dtos.UserDto;
 
-public record InitRequest(OrdonnateurDto ordonnateur) { }
+public record InitRequest(UserDto ordonnateur) { }
 

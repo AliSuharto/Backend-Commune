@@ -7,6 +7,6 @@ import java.util.Optional;
 
 @Repository
 public interface CommuneRepository extends JpaRepository<Commune, Long> {
-
+    Optional<Commune> findByNom(String nom);
 
 }

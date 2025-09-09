@@ -3,7 +3,6 @@ package Commune.Dev.Services;
 import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.*;
 import Commune.Dev.Repositories.*;
-import Commune.Dev.Services.SalleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.*;
@@ -20,13 +19,13 @@ import java.util.stream.Collectors;
 @Transactional
 public class SalleServiceImpl implements SalleService {
 
-    private final SalleRepository salleRepository;
+    private final HallsRepository salleRepository;
     private final MarcheeRepository marcheeRepository;
     private final ZoneRepository zoneRepository;
 
     @Override
     public SalleResponseDTO create(SalleCreateDTO createDTO) {
-        log.info("Creating new Salle with name: {}", createDTO.getNom());
+        log.info("Creating new Salle with name: {}", createDTO.getCodeUnique());
 
         // Validate business rule: soit marché direct, soit zone
         if (!createDTO.isValid()) {
@@ -34,31 +33,31 @@ public class SalleServiceImpl implements SalleService {
         }
 
         // Validate unique name
-        if (salleRepository.existsByNomIgnoreCase(createDTO.getNom())) {
+        if (salleRepository.existsByCodeUniqueIgnoreCase(createDTO.getCodeUnique())) {
             throw new RuntimeException("Une salle avec ce nom existe déjà");
         }
 
-        Salle salle = new Salle();
-        salle.setNom(createDTO.getNom());
-        salle.setDescription(createDTO.getDescription());
+        Halls halls = new Halls();
+        halls.setNom(createDTO.getNom());
+        halls.setDescription(createDTO.getDescription());
 
         // Set emplacement selon la logique métier
         if (createDTO.getMarcheeId() != null) {
             // Salle directement dans le marché
             Marchee marchee = marcheeRepository.findById(createDTO.getMarcheeId())
                     .orElseThrow(() -> new RuntimeException("Marché non trouvé"));
-            salle.setMarchee(marchee);
-            salle.setZone(null); // Explicitement null
+            halls.setMarchee(marchee);
+            halls.setZone(null); // Explicitement null
         } else if (createDTO.getZoneId() != null) {
             // Salle dans une zone
             Zone zone = zoneRepository.findById(createDTO.getZoneId())
                     .orElseThrow(() -> new RuntimeException("Zone non trouvée"));
-            salle.setZone(zone);
-            salle.setMarchee(null); // Explicitement null - le marché sera accessible via zone.marchee
+            halls.setZone(zone);
+            halls.setMarchee(null); // Explicitement null - le marché sera accessible via zone.marchee
         }
 
-        Salle savedSalle = salleRepository.save(salle);
-        return mapToResponseDTO(savedSalle);
+        Halls savedHalls = salleRepository.save(halls);
+        return mapToResponseDTO(savedHalls);
     }
 
     @Override
@@ -72,19 +71,19 @@ public class SalleServiceImpl implements SalleService {
     public SalleResponseDTO update(Integer id, SalleUpdateDTO updateDTO) {
         log.info("Updating Salle with id: {}", id);
 
-        Salle salle = salleRepository.findById(id)
+        Halls halls = salleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Salle non trouvée"));
 
         // Update fields if provided
-        if (updateDTO.getNom() != null && !updateDTO.getNom().equals(salle.getNom())) {
-            if (salleRepository.existsByNomIgnoreCase(updateDTO.getNom())) {
+        if (updateDTO.getNom() != null && !updateDTO.getNom().equals(halls.getNom())) {
+            if (salleRepository.existsByCodeUniqueIgnoreCase(updateDTO.getCodeUnique())) {
                 throw new RuntimeException("Une salle avec ce nom existe déjà");
             }
-            salle.setNom(updateDTO.getNom());
+            halls.setNom(updateDTO.getNom());
         }
 
         if (updateDTO.getDescription() != null) {
-            salle.setDescription(updateDTO.getDescription());
+            halls.setDescription(updateDTO.getDescription());
         }
 
         // Gestion du changement d'emplacement
@@ -95,8 +94,8 @@ public class SalleServiceImpl implements SalleService {
             }
             Marchee marchee = marcheeRepository.findById(updateDTO.getMarcheeId())
                     .orElseThrow(() -> new RuntimeException("Marché non trouvé"));
-            salle.setMarchee(marchee);
-            salle.setZone(null); // Retirer de la zone
+            halls.setMarchee(marchee);
+            halls.setZone(null); // Retirer de la zone
         } else if (updateDTO.getMoveToZone() != null && updateDTO.getMoveToZone()) {
             // Déplacer vers une zone
             if (updateDTO.getZoneId() == null) {
@@ -104,25 +103,25 @@ public class SalleServiceImpl implements SalleService {
             }
             Zone zone = zoneRepository.findById(updateDTO.getZoneId())
                     .orElseThrow(() -> new RuntimeException("Zone non trouvée"));
-            salle.setZone(zone);
-            salle.setMarchee(null); // Retirer du marché direct
+            halls.setZone(zone);
+            halls.setMarchee(null); // Retirer du marché direct
         } else {
             // Mise à jour simple sans changement d'emplacement
-            if (updateDTO.getMarcheeId() != null && salle.getZone() == null) {
+            if (updateDTO.getMarcheeId() != null && halls.getZone() == null) {
                 // Mise à jour du marché pour une salle déjà dans un marché direct
                 Marchee marchee = marcheeRepository.findById(updateDTO.getMarcheeId())
                         .orElseThrow(() -> new RuntimeException("Marché non trouvé"));
-                salle.setMarchee(marchee);
-            } else if (updateDTO.getZoneId() != null && salle.getMarchee() == null) {
+                halls.setMarchee(marchee);
+            } else if (updateDTO.getZoneId() != null && halls.getMarchee() == null) {
                 // Mise à jour de la zone pour une salle déjà dans une zone
                 Zone zone = zoneRepository.findById(updateDTO.getZoneId())
                         .orElseThrow(() -> new RuntimeException("Zone non trouvée"));
-                salle.setZone(zone);
+                halls.setZone(zone);
             }
         }
 
-        Salle updatedSalle = salleRepository.save(salle);
-        return mapToResponseDTO(updatedSalle);
+        Halls updatedHalls = salleRepository.save(halls);
+        return mapToResponseDTO(updatedHalls);
     }
 
     @Override
@@ -145,7 +144,7 @@ public class SalleServiceImpl implements SalleService {
     @Override
     @Transactional(readOnly = true)
     public Page<SalleResponseDTO> findAllWithFilters(SalleFilterDTO filterDTO) {
-        Specification<Salle> spec = createSpecification(filterDTO);
+        Specification<Halls> spec = createSpecification(filterDTO);
 
         Sort sort = Sort.by(
                 filterDTO.getSortDirection().equalsIgnoreCase("DESC") ?
@@ -155,7 +154,7 @@ public class SalleServiceImpl implements SalleService {
 
         Pageable pageable = PageRequest.of(filterDTO.getPage(), filterDTO.getSize(), sort);
 
-        Page<Salle> sallesPage = salleRepository.findAll(spec, pageable);
+        Page<Halls> sallesPage = salleRepository.findAll(spec, pageable);
 
         return sallesPage.map(this::mapToResponseDTO);
     }
@@ -203,7 +202,7 @@ public class SalleServiceImpl implements SalleService {
     public List<SalleResponseDTO> createBatch(List<SalleCreateDTO> createDTOs) {
         log.info("Creating batch of {} salles", createDTOs.size());
 
-        List<Salle> salles = new ArrayList<>();
+        List<Halls> halls = new ArrayList<>();
 
         for (SalleCreateDTO createDTO : createDTOs) {
             // Validate business rule
@@ -211,33 +210,33 @@ public class SalleServiceImpl implements SalleService {
                 throw new RuntimeException("Salle '" + createDTO.getNom() + "': doit être soit directement dans un marché, soit dans une zone");
             }
 
-            if (salleRepository.existsByNomIgnoreCase(createDTO.getNom())) {
+            if (salleRepository.existsByCodeUniqueIgnoreCase(createDTO.getNom())) {
                 throw new RuntimeException("Une salle avec le nom '" + createDTO.getNom() + "' existe déjà");
             }
 
-            Salle salle = new Salle();
-            salle.setNom(createDTO.getNom());
-            salle.setDescription(createDTO.getDescription());
+            Halls halls1 = new Halls();
+            halls1.setNom(createDTO.getNom());
+            halls1.setDescription(createDTO.getDescription());
 
             if (createDTO.getMarcheeId() != null) {
                 // Salle directement dans le marché
                 Marchee marchee = marcheeRepository.findById(createDTO.getMarcheeId())
                         .orElseThrow(() -> new RuntimeException("Marché non trouvé: " + createDTO.getMarcheeId()));
-                salle.setMarchee(marchee);
-                salle.setZone(null);
+                halls1.setMarchee(marchee);
+                halls1.setZone(null);
             } else if (createDTO.getZoneId() != null) {
                 // Salle dans une zone
                 Zone zone = zoneRepository.findById(createDTO.getZoneId())
                         .orElseThrow(() -> new RuntimeException("Zone non trouvée: " + createDTO.getZoneId()));
-                salle.setZone(zone);
-                salle.setMarchee(null);
+                halls1.setZone(zone);
+                halls1.setMarchee(null);
             }
 
-            salles.add(salle);
+            halls.add(halls1);
         }
 
-        List<Salle> savedSalles = salleRepository.saveAll(salles);
-        return savedSalles.stream()
+        List<Halls> savedHalls = salleRepository.saveAll(halls);
+        return savedHalls.stream()
                 .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
@@ -269,8 +268,8 @@ public class SalleServiceImpl implements SalleService {
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByNom(String nom) {
-        return salleRepository.existsByNomIgnoreCase(nom);
+    public boolean existsByNom(String codeUnique) {
+        return salleRepository.existsByCodeUniqueIgnoreCase(codeUnique);
     }
 
     @Override
@@ -287,7 +286,7 @@ public class SalleServiceImpl implements SalleService {
                 .collect(Collectors.toList());
     }
 
-    private Specification<Salle> createSpecification(SalleFilterDTO filterDTO) {
+    private Specification<Halls> createSpecification(SalleFilterDTO filterDTO) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -310,35 +309,35 @@ public class SalleServiceImpl implements SalleService {
         };
     }
 
-    private SalleResponseDTO mapToResponseDTO(Salle salle) {
+    private SalleResponseDTO mapToResponseDTO(Halls halls) {
         SalleResponseDTO dto = new SalleResponseDTO();
-        dto.setId(salle.getId());
-        dto.setNom(salle.getNom());
-        dto.setDescription(salle.getDescription());
+        dto.setId(Math.toIntExact(halls.getId()));
+        dto.setNom(halls.getNom());
+        dto.setDescription(halls.getDescription());
 
         // Déterminer le type d'emplacement et les informations
-        if (salle.getMarchee() != null && salle.getZone() == null) {
+        if (halls.getMarchee() != null && halls.getZone() == null) {
             // Salle directement dans un marché
             dto.setEmplacementType("MARCHE_DIRECT");
-            dto.setMarcheeId(salle.getMarchee().getId());
-            dto.setMarcheeNom(salle.getMarchee().getNom());
-        } else if (salle.getZone() != null && salle.getMarchee() == null) {
+            dto.setMarcheeId(Math.toIntExact(halls.getMarchee().getId()));
+            dto.setMarcheeNom(halls.getMarchee().getNom());
+        } else if (halls.getZone() != null && halls.getMarchee() == null) {
             // Salle dans une zone
             dto.setEmplacementType("ZONE");
-            dto.setZoneId(salle.getZone().getId());
-            dto.setZoneNom(salle.getZone().getNom());
+            dto.setZoneId(Math.toIntExact(halls.getZone().getId()));
+            dto.setZoneNom(halls.getZone().getNom());
             // Le marché est accessible via la zone
-            if (salle.getZone().getMarchee() != null) {
-                dto.setMarcheeId(salle.getZone().getMarchee().getId());
-                dto.setMarcheeNom(salle.getZone().getMarchee().getNom());
+            if (halls.getZone().getMarchee() != null) {
+                dto.setMarcheeId(Math.toIntExact(halls.getZone().getMarchee().getId()));
+                dto.setMarcheeNom(halls.getZone().getMarchee().getNom());
             }
         }
 
         // Count places if available
-        if (salle.getPlaces() != null) {
-            dto.setNbPlaces((long) salle.getPlaces().size());
+        if (halls.getPlaces() != null) {
+            dto.setNbrPlaces((long) halls.getPlaces().size());
         } else {
-            dto.setNbPlaces(salleRepository.countPlacesBySalleId(salle.getId()));
+            dto.setNbrPlaces(salleRepository.countPlacesBySalleId(Math.toIntExact(halls.getId())));
         }
 
         return dto;
