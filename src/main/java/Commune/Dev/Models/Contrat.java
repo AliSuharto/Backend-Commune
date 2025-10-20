@@ -1,5 +1,6 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 public class Contrat {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "id_place")
@@ -41,6 +43,7 @@ public class Contrat {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_marchand", insertable = false, updatable = false)
+    @JsonBackReference("marchand-contrat")
     private Marchands marchand;
 
     @ManyToOne(fetch = FetchType.LAZY)

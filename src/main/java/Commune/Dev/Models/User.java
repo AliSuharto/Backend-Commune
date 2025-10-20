@@ -51,6 +51,9 @@ public class User implements UserDetails {
 
     private String telephone;
 
+    @ManyToMany
+    private List<Marchee> marchees;
+
     // Pour l'ORDONNATEUR seulement - référence à la commune
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "commune_id")

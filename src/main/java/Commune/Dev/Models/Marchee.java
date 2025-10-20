@@ -27,8 +27,10 @@ public class Marchee {
     private String adresse;
     @Column(name = "nbrPlace")
     private Integer nbrPlace;
-
     private String description;
+
+    @ManyToMany(mappedBy = "marchees")
+    private List<User> users;
 
     // Relations
     @OneToMany(mappedBy = "marchee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -40,7 +42,7 @@ public class Marchee {
     private List<Halls> halls = new ArrayList<>();
 
     @OneToMany(mappedBy = "marchee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JsonManagedReference("marchee-places")
+    @JsonManagedReference("marchee-place")
     private List<Place> places = new ArrayList<>();
 
     // Méthodes utilitaires pour maintenir la cohérence

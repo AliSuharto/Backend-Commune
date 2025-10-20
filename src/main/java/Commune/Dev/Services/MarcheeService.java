@@ -1,5 +1,6 @@
 package Commune.Dev.Services;
 
+import Commune.Dev.Dtos.ApiResponse;
 import Commune.Dev.Models.Marchee;
 import Commune.Dev.Models.Zone;
 import Commune.Dev.Models.Place;
@@ -41,7 +42,7 @@ public class MarcheeService {
 
     // CREATE operations
     @Transactional
-    public ResponseEntity<String> save(Marchee marchee) {
+    public ResponseEntity<ApiResponse<Marchee>> save(Marchee marchee) {
         try {
             logger.info("Début de l'enregistrement du marché : nom={}, adresse={}",
                     marchee.getNom(), marchee.getAdresse());
@@ -51,10 +52,14 @@ public class MarcheeService {
                 String message = "Ce marché existe déjà avec le nom '" + marchee.getNom() +
                         "' et l'adresse '" + marchee.getAdresse() + "'";
                 logger.warn(message);
-                return ResponseEntity.badRequest().body(message);
+                return ResponseEntity
+                        .badRequest()
+                        .body(ApiResponse.error(message));
             }
 
-            // Préparer les relations AVANT de sauvegarder
+            // ===============================
+            // Préparation des relations avant sauvegarde
+            // ===============================
             if (marchee.getZones() != null) {
                 for (Zone zone : marchee.getZones()) {
                     zone.setMarchee(marchee);
@@ -102,18 +107,25 @@ public class MarcheeService {
                 }
             }
 
-            // UNE SEULE sauvegarde : le marché avec cascade
+            // ===============================
+            // Sauvegarde principale
+            // ===============================
             Marchee savedMarchee = marcheeRepository.save(marchee);
 
             logger.info("Enregistrement du marché '{}' terminé avec succès.", savedMarchee.getNom());
-            return ResponseEntity.ok("Marché enregistré avec succès.");
+
+            // ✅ Retourne un JSON bien structuré
+            return ResponseEntity.ok(ApiResponse.success("Marché enregistré avec succès.", savedMarchee));
 
         } catch (Exception ex) {
             logger.error("Erreur lors de l'enregistrement du marché '{}': {}",
                     marchee.getNom(), ex.getMessage(), ex);
-            return ResponseEntity.status(500).body("Erreur lors de l'enregistrement du marché: " + ex.getMessage());
+            return ResponseEntity
+                    .internalServerError()
+                    .body(ApiResponse.error("Erreur lors de l'enregistrement du marché : " + ex.getMessage()));
         }
     }
+
 
     public ResponseEntity<Map<String, Object>> saveAll(List<Marchee> marchees) {
         List<Marchee> marcheesToSave = new ArrayList<>();

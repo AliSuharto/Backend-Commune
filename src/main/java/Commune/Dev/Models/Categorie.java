@@ -1,5 +1,6 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -37,6 +38,7 @@ public class Categorie {
 
 
     @OneToMany(mappedBy = "categorie", cascade = CascadeType.ALL)
+    @JsonBackReference("categorie-places")
     private List<Place> places;
 
     @OneToMany(mappedBy = "categorie", cascade = CascadeType.ALL)

@@ -275,4 +275,20 @@ public class MarchandsService {
         }
         return Paths.get(photoUploadDirectory, photoFilename);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

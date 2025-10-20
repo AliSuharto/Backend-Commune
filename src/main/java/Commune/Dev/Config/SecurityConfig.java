@@ -39,11 +39,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/public/zones").permitAll()
-                        .requestMatchers("/api/commune-check").permitAll()
+                        .requestMatchers("/api/public/commune-check").permitAll()
                         .requestMatchers("/api/marchees").permitAll()
                         .requestMatchers("/api/marchees/**").permitAll()
+                        .requestMatchers("/api/contrat/**").permitAll()
                         .requestMatchers("/api/recu-plage").permitAll()
                         .requestMatchers("/api/recu-plage/**").permitAll()
+                        .requestMatchers("/api/places/**").permitAll()
+                        .requestMatchers("/api/sessions/**").permitAll()
 
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
@@ -76,7 +79,8 @@ public class SecurityConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+//        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);

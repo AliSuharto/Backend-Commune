@@ -9,7 +9,20 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "Place")
+@Table(name = "Place", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_place_nom_marchee",
+                columnNames = {"nom", "marchee_id"}
+        ),
+        @UniqueConstraint(
+                name = "uk_place_nom_zone",
+                columnNames = {"nom", "zone_id"}
+        ),
+        @UniqueConstraint(
+                name = "uk_place_nom_hall",
+                columnNames = {"nom", "hall_id"}
+        )
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -19,10 +32,8 @@ public class Place {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "nom")
+    @Column(name = "nom", nullable = false)
     private String nom;
-
-
 
     @Column(name = "adresse")
     private String adresse;
@@ -39,16 +50,14 @@ public class Place {
     // Relations
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "marchee_id", nullable = true)
-    @JsonBackReference("marchee-places")
+    @JsonBackReference("marchee-place")
     private Marchee marchee;
 
-    // Relation ManyToOne vers Zone (optionnelle)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "zone_id", nullable = true)
     @JsonBackReference("zone-places")
     private Zone zone;
 
-    // Relation ManyToOne vers Hall (optionnelle)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hall_id", nullable = true)
     @JsonBackReference("hall-places")
@@ -56,9 +65,11 @@ public class Place {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categorie_id", nullable = true)
+    @JsonBackReference("categorie-places")
     private Categorie categorie;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL)
+    @JsonBackReference("carteMarchands-places")
     private List<CarteMarchands> carteMarchands;
 
     @OneToMany(mappedBy = "place", cascade = CascadeType.ALL)
@@ -66,6 +77,6 @@ public class Place {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_marchands", nullable = true)
+    @JsonBackReference("marchands-places")
     private Marchands marchands;
 }
-

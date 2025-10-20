@@ -1,5 +1,6 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -65,14 +66,18 @@ public class Marchands {
 
     // Relations
     @OneToMany(mappedBy = "marchand", cascade = CascadeType.ALL)
+    @JsonManagedReference("marchand-carte")
     private List<CarteMarchands> carteMarchands;
 
     @OneToMany(mappedBy = "marchand", cascade = CascadeType.ALL)
+    @JsonManagedReference("marchand-paiement")
     private List<Paiement> paiements;
 
     @OneToMany(mappedBy = "marchand", cascade = CascadeType.ALL)
+    @JsonManagedReference("marchand-contrat")
     private List<Contrat> contrats;
 
     @OneToMany(mappedBy = "marchands", cascade = CascadeType.ALL)
+    @JsonManagedReference ("marchands-places")
     private List<Place> places;
 }

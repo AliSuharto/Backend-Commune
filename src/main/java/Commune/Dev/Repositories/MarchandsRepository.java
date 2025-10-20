@@ -27,6 +27,10 @@ public interface MarchandsRepository extends JpaRepository<Marchands, Integer> {
     @Query("SELECT DISTINCT m FROM Marchands m WHERE m.places IS NOT EMPTY")
     List<Marchands> findMarchandsWithPlaces();
 
+    // Marchands SANS des places associées
+    @Query("SELECT m FROM Marchands m WHERE NOT EXISTS (SELECT p FROM Place p WHERE p.marchands = m AND p.isOccuped = true)")
+    List<Marchands> findMarchandsSansPlace();
+
     // Recherche par numéro CIN
     Marchands findByNumCIN(String numCIN);
 

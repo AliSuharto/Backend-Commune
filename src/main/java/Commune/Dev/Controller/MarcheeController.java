@@ -1,14 +1,13 @@
 package Commune.Dev.Controller;
+import Commune.Dev.Dtos.ApiResponse;
 import Commune.Dev.Models.Marchee;
 import Commune.Dev.Services.MarcheeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,10 +22,9 @@ public class MarcheeController {
 
     // CREATE - Enregistrer un seul marché
     @PostMapping
-//    @PreAuthorize("hasAnyRole('CREATEUR_MARCHE', 'DIRECTEUR')")
-    public ResponseEntity<String> createMarchee(@RequestBody Marchee marchee) {
+    // @PreAuthorize("hasAnyRole('CREATEUR_MARCHE', 'DIRECTEUR')")
+    public ResponseEntity<ApiResponse<Marchee>> createMarchee(@RequestBody Marchee marchee) {
         return marcheeService.save(marchee);
-
     }
 
     // CREATE - Enregistrer plusieurs marchés en même temps
@@ -125,7 +123,7 @@ public class MarcheeController {
 
     // UPDATE - Mettre à jour un marché
     @PutMapping("/{id}")
-    public ResponseEntity<ResponseEntity<String>> updateMarchee(@PathVariable Integer id, @RequestBody Marchee marcheeDetails) {
+    public ResponseEntity<ResponseEntity<ApiResponse<Marchee>>> updateMarchee(@PathVariable Integer id, @RequestBody Marchee marcheeDetails) {
         try {
             Optional<Marchee> optionalMarchee = marcheeService.findById(id);
             if (optionalMarchee.isPresent()) {
@@ -136,7 +134,7 @@ public class MarcheeController {
                 marchee.setAdresse(marcheeDetails.getAdresse());
                 marchee.setNbrPlace(marcheeDetails.getNbrPlace());
 
-                ResponseEntity<String> updatedMarchee = marcheeService.save(marchee);
+                ResponseEntity<ApiResponse<Marchee>> updatedMarchee = marcheeService.save(marchee);
                 return ResponseEntity.ok(updatedMarchee);
             } else {
                 return ResponseEntity.notFound().build();
@@ -159,7 +157,7 @@ public class MarcheeController {
 
     // PATCH - Mise à jour partielle d'un marché
     @PatchMapping("/{id}")
-    public ResponseEntity<ResponseEntity<String>> partialUpdateMarchee(@PathVariable Integer id, @RequestBody Marchee marcheePartial) {
+    public ResponseEntity<ResponseEntity<ApiResponse<Marchee>>> partialUpdateMarchee(@PathVariable Integer id, @RequestBody Marchee marcheePartial) {
         try {
             Optional<Marchee> optionalMarchee = marcheeService.findById(id);
             if (optionalMarchee.isPresent()) {
@@ -176,7 +174,7 @@ public class MarcheeController {
                     marchee.setNbrPlace(marcheePartial.getNbrPlace());
                 }
 
-                ResponseEntity<String> updatedMarchee = marcheeService.save(marchee);
+                ResponseEntity<ApiResponse<Marchee>> updatedMarchee = marcheeService.save(marchee);
                 return ResponseEntity.ok(updatedMarchee);
             } else {
                 return ResponseEntity.notFound().build();

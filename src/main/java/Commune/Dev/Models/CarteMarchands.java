@@ -1,5 +1,6 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,9 +30,11 @@ public class CarteMarchands {
     // Relations
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "marchand_id", insertable = false, updatable = false)
+    @JsonBackReference("marchand-carte")
     private Marchands marchand;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "place_id", insertable = false, updatable = false)
+    @JsonBackReference("carteMarchands-places")
     private Place place;
 }

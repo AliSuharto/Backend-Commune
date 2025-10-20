@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Repository
@@ -27,7 +28,9 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
 
 
 
+    List<Place> findByIsOccupedTrue();
 
+    List<Place> findByIsOccupedFalse();
     // Recherche par nom (insensible à la casse)
     List<Place> findByNomContainingIgnoreCase(String nom);
 

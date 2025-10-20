@@ -1,5 +1,6 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -28,13 +29,13 @@ public class Session {
     private User user;
 
     // Liste des marchés associés à cette session
-    @ManyToMany
-    @JoinTable(
-            name = "session_marchees",
-            joinColumns = @JoinColumn(name = "session_id"),
-            inverseJoinColumns = @JoinColumn(name = "marchee_id")
-    )
-    private List<Marchee> marchees;
+//    @ManyToMany
+//    @JoinTable(
+//            name = "session_marchees",
+//            joinColumns = @JoinColumn(name = "session_id"),
+//            inverseJoinColumns = @JoinColumn(name = "marchee_id")
+//    )
+//    private List<Marchee> marchees;
 
     // Date et heure d'ouverture
     @Column(name = "start_time", nullable = false)
@@ -51,10 +52,6 @@ public class Session {
     // Montant total collecté pendant la session
     @Column(name = "total_collected")
     private Double totalCollected;
-
-    // Nombre de transactions effectuées
-    @Column(name = "transaction_count")
-    private Integer transactionCount;
 
     // Observations ou remarques
     private String notes;
@@ -75,4 +72,8 @@ public class Session {
         VALIDEE,
         REJETEE
     }
+
+
+    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
+    private List<Paiement> paiements;
 }

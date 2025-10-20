@@ -37,6 +37,8 @@ public class Halls {
 
     private String codeUnique;
 
+    private Long NbrPlace;
+
     // Relations
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "marchee_id",nullable = true)
