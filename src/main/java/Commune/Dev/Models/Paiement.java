@@ -26,7 +26,7 @@ public class Paiement {
     @NotNull(message = "Le montant est obligatoire")
     @DecimalMin(value = "0.0", inclusive = false, message = "Le montant doit être positif")
     @Column(precision = 10, scale = 5)
-    private Double montant;
+    private BigDecimal montant;
 
     @PastOrPresent(message = "La date de paiement ne peut pas être dans le futur")
     private LocalDateTime datePaiement;
@@ -53,8 +53,9 @@ public class Paiement {
     @OneToMany(mappedBy = "paiement", cascade = CascadeType.ALL)
     private List<Recu> recus;
 
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "session_id", insertable = false, updatable = false)
+    @JoinColumn(name = "session_id")
     private Session session;
 
     public enum ModePaiement {
