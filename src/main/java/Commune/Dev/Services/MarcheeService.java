@@ -1,6 +1,7 @@
 package Commune.Dev.Services;
 
 import Commune.Dev.Dtos.ApiResponse;
+import Commune.Dev.Dtos.MarcheeResponseDTO;
 import Commune.Dev.Models.Marchee;
 import Commune.Dev.Models.Zone;
 import Commune.Dev.Models.Place;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class MarcheeService {
@@ -397,4 +399,78 @@ public class MarcheeService {
     public List<Marchee> findMarcheesWithoutZones() {
         return marcheeRepository.findMarcheesWithoutZones();
     }
+
+    public List<MarcheeResponseDTO> getAllMarcheeStats() {
+        List<Marchee> marchees = marcheeRepository.findAll();
+
+        return marchees.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    private MarcheeResponseDTO convertToDTO(Marchee marchee) {
+        List<Place> allPlaces = collectAllPlaces(marchee);
+
+        long totalPlaces = allPlaces.size();
+        long placesOccupees = allPlaces.stream().filter(Place::getIsOccuped).count();
+
+        double tauxOccupation = totalPlaces > 0
+                ? (placesOccupees * 100.0 / totalPlaces)
+                : 0.0;
+
+        return new MarcheeResponseDTO(
+                marchee.getId(),
+                marchee.getNom(),
+                marchee.getAdresse(),
+                totalPlaces,
+                placesOccupees,
+                Math.round(tauxOccupation * 100.0) / 100.0 // arrondi à 2 décimales
+        );
+    }
+
+    /**
+     * Récupère toutes les places rattachées à ce marché,
+     * qu'elles soient directement liées ou via les zones/halls imbriqués.
+     */
+    private List<Place> collectAllPlaces(Marchee marchee) {
+        List<Place> allPlaces = new ArrayList<>();
+
+        // 1. Les places directement dans le marché
+        if (marchee.getPlaces() != null)
+            allPlaces.addAll(marchee.getPlaces());
+
+        // 2. Les places dans chaque zone du marché
+        if (marchee.getZones() != null) {
+            marchee.getZones().forEach(zone -> {
+                if (zone.getPlaces() != null)
+                    allPlaces.addAll(zone.getPlaces());
+
+                // 3. Les places dans les halls d'une zone
+                if (zone.getHalls() != null) {
+                    zone.getHalls().forEach(hall -> {
+                        if (hall.getPlaces() != null)
+                            allPlaces.addAll(hall.getPlaces());
+                    });
+                }
+            });
+        }
+
+        // 4. Les places dans les halls directement rattachés au marché
+        if (marchee.getHalls() != null) {
+            marchee.getHalls().forEach(hall -> {
+                if (hall.getPlaces() != null)
+                    allPlaces.addAll(hall.getPlaces());
+            });
+        }
+
+        return allPlaces;
+    }
+
+
+
+
+
+
+
+
 }

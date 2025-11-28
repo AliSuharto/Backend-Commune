@@ -1,5 +1,7 @@
 package Commune.Dev.Controller;
 
+import Commune.Dev.Dtos.ImportResult;
+import Commune.Dev.Dtos.MarchandDTO;
 import Commune.Dev.Models.Marchands;
 import Commune.Dev.Services.MarchandsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,62 +35,60 @@ public class MarchandsController {
 
     // Obtenir tous les marchands
     @GetMapping
-    public ResponseEntity<List<Marchands>> getAllMarchands() {
-        try {
-            List<Marchands> marchands = marchandsService.getAllMarchands();
-            return ResponseEntity.ok(marchands);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+
+    public ResponseEntity<List<MarchandDTO>> getAllMarchands() {
+        List<MarchandDTO> marchands = marchandsService.getAllMarchands();
+        return ResponseEntity.ok(marchands);
     }
+
 
     // Obtenir les marchands avec places
-    @GetMapping("/with-places")
-    public ResponseEntity<List<Marchands>> getMarchandsWithPlaces() {
-        try {
-            List<Marchands> marchands = marchandsService.getMarchandsWithPlaces();
-            return ResponseEntity.ok(marchands);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+//    @GetMapping("/with-places")
+//    public ResponseEntity<List<Marchands>> getMarchandsWithPlaces() {
+//        try {
+//            List<Marchands> marchands = marchandsService.getMarchandsWithPlaces();
+//            return ResponseEntity.ok(marchands);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
 
     // Rechercher un marchand par ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Marchands> getMarchandById(@PathVariable Integer id) {
-        try {
-            Optional<Marchands> marchand = marchandsService.getMarchandById(id);
-            return marchand.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+//    @GetMapping("/{id}")
+//    public ResponseEntity<Marchands> getMarchandById(@PathVariable Integer id) {
+//        try {
+//            Optional<Marchands> marchand = marchandsService.getMarchandById(id);
+//            return marchand.map(ResponseEntity::ok)
+//                    .orElse(ResponseEntity.notFound().build());
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
 
     // Rechercher des marchands par nom/prénom
-    @GetMapping("/search")
-    public ResponseEntity<List<Marchands>> searchMarchands(@RequestParam String q) {
-        try {
-            if (q == null || q.trim().isEmpty()) {
-                return ResponseEntity.badRequest().build();
-            }
-            List<Marchands> marchands = marchandsService.searchMarchands(q.trim());
-            return ResponseEntity.ok(marchands);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+//    @GetMapping("/search")
+//    public ResponseEntity<List<Marchands>> searchMarchands(@RequestParam String q) {
+//        try {
+//            if (q == null || q.trim().isEmpty()) {
+//                return ResponseEntity.badRequest().build();
+//            }
+//            List<Marchands> marchands = marchandsService.searchMarchands(q.trim());
+//            return ResponseEntity.ok(marchands);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
 
     // Rechercher par numéro CIN
-    @GetMapping("/cin/{numCIN}")
-    public ResponseEntity<Marchands> getMarchandByNumCIN(@PathVariable String numCIN) {
-        try {
-            Marchands marchand = marchandsService.getMarchandByNumCIN(numCIN);
-            return marchand != null ? ResponseEntity.ok(marchand) : ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+//    @GetMapping("/cin/{numCIN}")
+//    public ResponseEntity<Marchands> getMarchandByNumCIN(@PathVariable String numCIN) {
+//        try {
+//            Marchands marchand = marchandsService.getMarchandByNumCIN(numCIN);
+//            return marchand != null ? ResponseEntity.ok(marchand) : ResponseEntity.notFound().build();
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
 
     // Créer un nouveau marchand avec photo optionnelle
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
@@ -139,47 +139,57 @@ public class MarchandsController {
 
     // Importer des marchands depuis un fichier Excel
     @PostMapping("/import/excel")
-    public ResponseEntity<?> importMarchandsFromExcel(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> importMarchandsAndContrats(@RequestParam("file") MultipartFile file) {
+
+        Map<String, Object> response = new HashMap<>();
+
         try {
+            // =========================
+            // 1. VALIDATION DU FICHIER
+            // =========================
             if (file.isEmpty()) {
-                Map<String, Object> response = new HashMap<>();
                 response.put("success", false);
-                response.put("message", "Le fichier ne peut pas être vide");
+                response.put("message", "Le fichier ne peut pas être vide.");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            // Vérifier l'extension du fichier
             String filename = file.getOriginalFilename();
             if (filename == null || (!filename.endsWith(".xlsx") && !filename.endsWith(".xls"))) {
-                Map<String, Object> response = new HashMap<>();
                 response.put("success", false);
-                response.put("message", "Format de fichier non supporté. Utilisez .xlsx ou .xls");
+                response.put("message", "Format non supporté. Utilisez .xlsx ou .xls");
                 return ResponseEntity.badRequest().body(response);
             }
 
-            List<Marchands> importedMarchands = marchandsService.importFromExcel(file);
+            // =========================
+            // 2. APPEL AU SERVICE
+            // =========================
+            ImportResult result = marchandsService.importMarchandsAndContrats(file);
 
-            Map<String, Object> response = new HashMap<>();
+            // =========================
+            // 3. CONSTRUCTION RÉPONSE
+            // =========================
             response.put("success", true);
-            response.put("message", importedMarchands.size() + " marchands importés avec succès");
-            response.put("importedCount", importedMarchands.size());
-            response.put("marchands", importedMarchands);
+            response.put("message", "Import terminé");
+            response.put("summary", Map.of(
+                    "marchandsImported", result.marchandsSaved.size(),
+                    "contratsCreated", result.contratsSaved.size(),
+                    "errorsCount", result.errors.size()
+            ));
+            response.put("marchandsSaved", result.marchandsSaved);
+            response.put("contratsSaved", result.contratsSaved);
+            response.put("errors", result.errors);
 
             return ResponseEntity.ok(response);
 
-        } catch (RuntimeException e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
+
             response.put("success", false);
-            response.put("message", "Erreur lors de l'importation: " + e.getMessage());
+            response.put("message", "Erreur lors de l'importation : " + e.getMessage());
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+
 
     // Mettre à jour un marchand
     @PutMapping(value = "/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,6 +19,8 @@ public class Session {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    private String nomSession;
 
     // Type de session (PERCEPTEUR ou REGISSEUR)
     @Enumerated(EnumType.STRING)
@@ -45,13 +48,13 @@ public class Session {
     @Column(name = "end_time")
     private LocalDateTime endTime;
 
-    // Statut (OUVERTE, FERMEE, EN_VALIDATION, VALIDEE, REJETEE)
+    // Statut (OUVERTE, FERMEE,)
     @Enumerated(EnumType.STRING)
     private SessionStatus status;
 
     // Montant total collecté pendant la session
     @Column(name = "total_collected")
-    private Double totalCollected;
+    private BigDecimal totalCollected;
 
     // Observations ou remarques
     private String notes;
@@ -60,6 +63,8 @@ public class Session {
     @Column(name = "synced")
     private Boolean synced = false;
 
+    @Column(name = "isValid")
+    private Boolean isValid= false;
 
     public enum SessionType {
         PERCEPTEUR,

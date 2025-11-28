@@ -1,5 +1,6 @@
 package Commune.Dev.Controller;
 
+import Commune.Dev.Dtos.MarchandDetailsDTO;
 import Commune.Dev.Models.Contrat;
 import Commune.Dev.Services.ContratService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,13 @@ public class ContratController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+
+    @GetMapping("/contrats-actifs")
+    public ResponseEntity<List<MarchandDetailsDTO>> getMarchandsContratActif() {
+        return ResponseEntity.ok(contratService.getMarchandsAvecContratActif());
+    }
+
 
     // Récupérer un contrat par ID
     @GetMapping("/{id}")
@@ -84,16 +92,24 @@ public class ContratController {
         try {
             // LOGS pour debug
             System.out.println("=== CRÉATION CONTRAT ===");
+            System.out.println("Objet reçu: " + contrat);
             System.out.println("idPlace: " + contrat.getIdPlace());
             System.out.println("idMarchand: " + contrat.getIdMarchand());
             System.out.println("categorieId: " + contrat.getCategorieId());
+            System.out.println("droitAnnuelId: " + contrat.getDroitAnnuelId()); // ✅ Correction
             System.out.println("nom: " + contrat.getNom());
             System.out.println("description: " + contrat.getDescription());
             System.out.println("dateOfStart: " + contrat.getDateOfStart());
 
+            // ⭐ LOG CRITIQUE
+            if (contrat.getDroitAnnuelId() == null) {
+                System.err.println("⚠️ ATTENTION: droitAnnuelId est NULL dans la requête!");
+            }
+
             Contrat newContrat = contratService.createContrat(contrat);
 
-            System.out.println("Contrat créé avec succès, ID: " + newContrat.getId());
+            System.out.println("✅ Contrat créé avec succès, ID: " + newContrat.getId());
+            System.out.println("✅ droitAnnuelId sauvegardé: " + newContrat.getDroitAnnuelId());
 
             response.put("success", true);
             response.put("message", "Contrat créé avec succès");
@@ -101,21 +117,21 @@ public class ContratController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (IllegalArgumentException e) {
-            System.err.println("Erreur de validation: " + e.getMessage());
+            System.err.println("❌ Erreur de validation: " + e.getMessage());
             e.printStackTrace();
             response.put("success", false);
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
 
         } catch (IllegalStateException e) {
-            System.err.println("Erreur d'état: " + e.getMessage());
+            System.err.println("❌ Erreur d'état: " + e.getMessage());
             e.printStackTrace();
             response.put("success", false);
             response.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
 
         } catch (Exception e) {
-            System.err.println("Erreur inattendue lors de la création du contrat");
+            System.err.println("❌ Erreur inattendue lors de la création du contrat");
             e.printStackTrace();
             response.put("success", false);
             response.put("message", "Erreur lors de la création du contrat: " + e.getMessage());

@@ -1,5 +1,6 @@
 package Commune.Dev.Controller;
 import Commune.Dev.Dtos.ApiResponse;
+import Commune.Dev.Dtos.MarcheeResponseDTO;
 import Commune.Dev.Models.Marchee;
 import Commune.Dev.Services.MarcheeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,14 +41,23 @@ public class MarcheeController {
 
 
     // READ - Récupérer tous les marchés
+    //@GetMapping
+//    public ResponseEntity<List<Marchee>> getAllMarchees() {
+//        try {
+//            List<Marchee> marchees = marcheeService.findAll();
+//
+//            return ResponseEntity.ok(marchees);
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
     @GetMapping
-    public ResponseEntity<List<Marchee>> getAllMarchees() {
+    public ResponseEntity<List<MarcheeResponseDTO>> getAllMarcheeStats() {
         try {
-            List<Marchee> marchees = marcheeService.findAll();
-
-            return ResponseEntity.ok(marchees);
+            List<MarcheeResponseDTO> marcheeStats = marcheeService.getAllMarcheeStats();
+            return ResponseEntity.ok(marcheeStats);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.internalServerError().build();
         }
     }
 

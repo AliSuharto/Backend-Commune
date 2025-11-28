@@ -1,5 +1,7 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -52,7 +54,11 @@ public class User implements UserDetails {
     private String telephone;
 
     @ManyToMany
+    @JsonBackReference("marchee-user")
     private List<Marchee> marchees;
+
+    @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL)
+    private List<Paiement> paiements;
 
     // Pour l'ORDONNATEUR seulement - référence à la commune
     @ManyToOne(fetch = FetchType.LAZY)

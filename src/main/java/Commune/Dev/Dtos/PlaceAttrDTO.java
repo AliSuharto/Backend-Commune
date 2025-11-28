@@ -10,6 +10,7 @@ public class PlaceAttrDTO {
         private Boolean isOccuped;
         private String zoneName;
         private String hallName;
+        private String marcheeName;
         private MarchandDTO marchand; // Marchand actuel si occupée
 
 }

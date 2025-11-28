@@ -1,20 +1,18 @@
 package Commune.Dev.Services;
 
-import Commune.Dev.Models.Contrat;
-import Commune.Dev.Models.Marchands;
-import Commune.Dev.Models.Place;
-import Commune.Dev.Models.Categorie;
-import Commune.Dev.Repositories.ContratRepository;
-import Commune.Dev.Repositories.MarchandsRepository;
-import Commune.Dev.Repositories.PlaceRepository;
-import Commune.Dev.Repositories.CategorieRepository;
+import Commune.Dev.Dtos.MarchandDetailsDTO;
+import Commune.Dev.Dtos.PaiementDTO;
+import Commune.Dev.Dtos.PlaceDTOmarchands;
+import Commune.Dev.Models.*;
+import Commune.Dev.Repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ContratService {
@@ -29,12 +27,17 @@ public class ContratService {
     private PlaceRepository placeRepository;
 
     @Autowired
+    private DroitannuelRepository droitannuelRepository;
+
+    @Autowired
     private CategorieRepository categorieRepository;
 
     // Récupérer tous les contrats
     public List<Contrat> getAllContrats() {
         return contratRepository.findAllWithRelations();
     }
+
+
 
     // Récupérer un contrat par ID
     public Optional<Contrat> getContratById(Integer id) {
@@ -56,52 +59,81 @@ public class ContratService {
         return contratRepository.findByCategorieId(categorieId);
     }
 
-    // Créer un nouveau contrat
+    public List<Contrat> getContratsByDroitAnnuel(Integer droitAnnuelId) {
+        return contratRepository.findByDroitAnnuelId(droitAnnuelId);
+    }
+
+
     @Transactional
     public Contrat createContrat(Contrat contrat) {
-        // Vérifications
-        if (contrat.getIdMarchand() == null || contrat.getIdPlace() == null || contrat.getCategorieId() == null) {
-            throw new IllegalArgumentException("Le marchand, la place et la catégorie sont obligatoires");
+
+        if (contrat.getIdMarchand() == null
+                || contrat.getIdPlace() == null
+                || contrat.getCategorieId() == null
+                || contrat.getDroitAnnuelId() == null) {
+            throw new IllegalArgumentException("Marchand, place, catégorie et droit annuel sont obligatoires");
         }
 
-        // Vérifier que le marchand existe
-        Optional<Marchands> marchand = marchandsRepository.findById(contrat.getIdMarchand());
-        if (marchand.isEmpty()) {
-            throw new IllegalArgumentException("Marchand non trouvé avec l'ID: " + contrat.getIdMarchand());
-        }
+        Marchands marchand = marchandsRepository.findById(contrat.getIdMarchand())
+                .orElseThrow(() -> new IllegalArgumentException("Marchand non trouvé"));
 
-        // Vérifier que la place existe
-        Optional<Place> place = placeRepository.findById(contrat.getIdPlace());
-        if (place.isEmpty()) {
-            throw new IllegalArgumentException("Place non trouvée avec l'ID: " + contrat.getIdPlace());
-        }
+        Place place = placeRepository.findById(contrat.getIdPlace())
+                .orElseThrow(() -> new IllegalArgumentException("Place non trouvée"));
 
-        // Vérifier que la catégorie existe
-        Optional<Categorie> categorie = categorieRepository.findById(contrat.getCategorieId());
-        if (categorie.isEmpty()) {
-            throw new IllegalArgumentException("Catégorie non trouvée avec l'ID: " + contrat.getCategorieId());
-        }
+        Categorie categorie = categorieRepository.findById(contrat.getCategorieId())
+                .orElseThrow(() -> new IllegalArgumentException("Catégorie non trouvée"));
 
-        // Vérifier qu'il n'y a pas déjà un contrat pour cette place
-        Optional<Contrat> existingContrat = contratRepository.findContratByPlace(contrat.getIdPlace());
-        if (existingContrat.isPresent()) {
+        System.out.println("Droit Annuel ID avant save: " + contrat.getDroitAnnuelId());
+        DroitAnnuel droitAnnuel = droitannuelRepository.findById(contrat.getDroitAnnuelId())
+                .orElseThrow(() -> new IllegalArgumentException("Droit annuel non trouvé"));
+
+        if (contratRepository.findContratByPlace(contrat.getIdPlace()).isPresent()) {
             throw new IllegalStateException("Un contrat existe déjà pour cette place");
         }
 
-        // Définir la date de début si elle n'est pas définie
+        // =========================
+        // MAPPING VIA ID (COHÉRENT)
+        // =========================
+
+        contrat.setCategorieId(categorie.getId());
+        contrat.setDroitAnnuelId(droitAnnuel.getId());
+        contrat.setIdMarchand(marchand.getId());
+        contrat.setIdPlace(place.getId());
+
+
+        // =========================
+        // GESTION PLACE
+        // =========================
+        place.setCategorie(categorie);
+
+        // =========================
+        // DATES ET ETAT
+        // =========================
+
         if (contrat.getDateOfStart() == null) {
-            contrat.setDateOfStart(LocalDateTime.now());
+            contrat.setDateOfStart(LocalDate.now());
         }
 
-        // Générer un nom si non fourni
+        contrat.setDateOfCreation(LocalDateTime.now());
+        contrat.setIsActif(true);
+
+        if (contrat.getDateOfStart() == null) {
+            contrat.setDateOfStart(LocalDate.from(LocalDate.now().atStartOfDay()));
+        }
+
+        // =========================
+        // NOM AUTOMATIQUE
+        // =========================
+
         if (contrat.getNom() == null || contrat.getNom().isEmpty()) {
-            contrat.setNom("Contrat " + place.get().getNom() + " - " +
-                    marchand.get().getPrenom() + " " + marchand.get().getNom());
+            contrat.setNom("Contrat " + place.getNom() + " - " +
+                    marchand.getPrenom() + " " + marchand.getNom());
         }
 
-        // Sauvegarder le contrat
         return contratRepository.save(contrat);
     }
+
+
 
     // Mettre à jour un contrat
     @Transactional
@@ -146,4 +178,117 @@ public class ContratService {
         Optional<Contrat> contrat = contratRepository.findContratByPlace(idPlace);
         return contrat.isPresent();
     }
+
+    public List<MarchandDetailsDTO> getMarchandsAvecContratActif() {
+
+        List<Contrat> contrats = contratRepository.findContratsActifsAvecTout();
+        Map<Integer, MarchandDetailsDTO> map = new HashMap<>();
+
+        for (Contrat contrat : contrats) {
+
+            Marchands marchand = contrat.getMarchand();
+
+            MarchandDetailsDTO dto = map.computeIfAbsent(marchand.getId(), id -> {
+                MarchandDetailsDTO m = new MarchandDetailsDTO();
+                m.setId(marchand.getId());
+                m.setDebutContrat(contrat.getDateOfStart());
+                m.setNom(safe(marchand.getNom()));
+                m.setStatut(safe(String.valueOf(marchand.getStatut())));
+                m.setActivite(safe(marchand.getActivite()));
+                m.setTelephone(safe(marchand.getNumTel1()));
+                m.setCin(safe(marchand.getNumCIN()));
+                return m;
+            });
+
+            // ================== PLACES ==================
+            if (contrat.getPlace() != null) {
+                Place place = contrat.getPlace();
+
+
+                PlaceDTOmarchands placeDTO = new PlaceDTOmarchands();
+                placeDTO.setNom(safe(place.getNom()));
+
+                placeDTO.setId(Integer.valueOf(safe(String.valueOf(place.getId()))));
+
+                placeDTO.setSalleName(
+                        place.getHall() != null ? safe(place.getHall().getNom()) : ""
+
+                );
+
+                placeDTO.setZoneName(
+                        place.getZone() != null ? safe(place.getZone().getNom()) : ""
+                );
+
+                placeDTO.setMarcheeName(
+                        place.getMarchee() != null ? safe(place.getMarchee().getNom()) : ""
+                );
+
+                dto.getPlaces().add(placeDTO);
+            }
+
+            // ================== PAIEMENTS ==================
+
+            LocalDateTime dateDernierPaiement = null;
+
+            if (marchand.getPaiements() != null && !marchand.getPaiements().isEmpty()) {
+                dateDernierPaiement = marchand.getPaiements()
+                        .stream()
+                        .map(Paiement::getDatePaiement)
+                        .filter(Objects::nonNull)
+                        .max(LocalDateTime::compareTo)
+                        .orElse(null);
+            }
+
+            if (marchand.getPaiements() != null && !marchand.getPaiements().isEmpty()) {
+
+                for (Paiement p : marchand.getPaiements()) {
+
+                    PaiementDTO paiementDTO = new PaiementDTO();
+
+                    paiementDTO.setMotif(safe(p.getMotif()));
+                    paiementDTO.setMontant(p.getMontant() != null ? p.getMontant() : BigDecimal.ZERO);
+                    paiementDTO.setDatePaiement(p.getDatePaiement());
+
+                    // ✅ Date réelle du dernier paiement du marchand
+                    paiementDTO.setDernierePaiement(dateDernierPaiement);
+
+                    // ---------- RECUS ----------
+                    if (p.getRecus() != null) {
+                        paiementDTO.setRecuNumero(safe(p.getRecus().getNumero()));
+                    } else {
+                        paiementDTO.setRecuNumero("");
+                    }
+
+                    // ---------- AGENT ----------
+                    if (p.getAgent() != null) {
+                        paiementDTO.setIdAgent(
+                                p.getAgent().getId() != null ? Math.toIntExact(p.getAgent().getId()) : null
+                        );
+                        paiementDTO.setNomAgent(safe(p.getAgent().getNom()));
+                    } else {
+                        paiementDTO.setIdAgent(null);
+                        paiementDTO.setNomAgent("");
+                    }
+
+                    dto.getPaiements().add(paiementDTO);
+                };
+            }
+        }
+
+        return new ArrayList<>(map.values());
+    }
+
+
+
+
+    private String safe(String value) {
+        return value != null ? value : "";
+    }
+
+
+
+
+
+
+
 }

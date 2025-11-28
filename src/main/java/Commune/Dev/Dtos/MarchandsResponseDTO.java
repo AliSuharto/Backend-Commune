@@ -2,6 +2,7 @@ package Commune.Dev.Dtos;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class MarchandsResponseDTO {
@@ -13,8 +14,7 @@ public class MarchandsResponseDTO {
     private String photo;
     private String numTel1;
     private String numTel2;
-    private int nombreCartes;
+    private Boolean estEndette;
     private int nombrePaiements;
-    private int nombreContrats;
-    private int nombrePlaces;
+    private List<PlaceDTO> places;
 }

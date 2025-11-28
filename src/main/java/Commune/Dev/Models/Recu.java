@@ -99,7 +99,7 @@ public class Recu {
     }
 
 
-        @ManyToOne(fetch = FetchType.LAZY)
+        @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_paiement", insertable = false, updatable = false)
     private Paiement paiement;
 

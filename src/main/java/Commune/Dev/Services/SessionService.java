@@ -1,161 +1,195 @@
-//package Commune.Dev.Services;
-//
-//import Commune.Dev.Models.Session;
-//import Commune.Dev.Repositories.SessionRepository;
-//import lombok.RequiredArgsConstructor;
-//import org.springframework.stereotype.Service;
-//import org.springframework.transaction.annotation.Transactional;
-//
-//import java.time.LocalDateTime;
-//import java.util.List;
-//
-//@Service
-//@RequiredArgsConstructor
-//@Transactional
-//public class SessionService {
-//
-//    private final SessionRepository sessionRepository;
-//
-//    // Créer une nouvelle session
-//    public Session createSession(Session session) {
-//        if (session.getStartTime() == null) {
-//            session.setStartTime(LocalDateTime.now());
-//        }
-//        if (session.getStatus() == null) {
-//            session.setStatus(Session.SessionStatus.OUVERTE);
-//        }
-//        if (session.getTotalCollected() == null) {
-//            session.setTotalCollected(0.0);
-//        }
-//        if (session.getSynced() == null) {
-//            session.setSynced(false);
-//        }
-//        return sessionRepository.save(session);
-//    }
-//
-//    // Obtenir toutes les sessions
-//    public List<Session> getAllSessions() {
-//        return sessionRepository.findAll();
-//    }
-//
-//    // Obtenir une session par ID
-//    public Session getSessionById(Long id) {
-//        return sessionRepository.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Session non trouvée avec l'ID : " + id));
-//    }
-//
-//    // Obtenir les sessions par utilisateur
-//    public List<Session> getSessionsByUser(Long userId) {
-//        return sessionRepository.findByUserId(userId);
-//    }
-//
-//    // Obtenir les sessions par type
-//    public List<Session> getSessionsByType(Session.SessionType type) {
-//        return sessionRepository.findByType(type);
-//    }
-//
-//    // Obtenir les sessions par statut
-//    public List<Session> getSessionsByStatus(Session.SessionStatus status) {
-//        return sessionRepository.findByStatus(status);
-//    }
-//
-//    // Ouvrir une session
-//    public Session ouvrirSession(Long id) {
-//        Session session = getSessionById(id);
-//        session.setStatus(Session.SessionStatus.OUVERTE);
-//        session.setStartTime(LocalDateTime.now());
-//        return sessionRepository.save(session);
-//    }
-//
-//    // Fermer une session
-//    public Session fermerSession(Long id) {
-//        Session session = getSessionById(id);
-//        if (!session.getStatus().equals(Session.SessionStatus.OUVERTE)) {
-//            throw new RuntimeException("Seules les sessions ouvertes peuvent être fermées");
-//        }
-//        session.setStatus(Session.SessionStatus.FERMEE);
-//        session.setEndTime(LocalDateTime.now());
-//        return sessionRepository.save(session);
-//    }
-//
-//    // Valider une session
-//    public Session validerSession(Long id) {
-//        Session session = getSessionById(id);
-//        if (!session.getStatus().equals(Session.SessionStatus.FERMEE) &&
-//                !session.getStatus().equals(Session.SessionStatus.EN_VALIDATION)) {
-//            throw new RuntimeException("Seules les sessions fermées ou en validation peuvent être validées");
-//        }
-//        session.setStatus(Session.SessionStatus.VALIDEE);
-//        return sessionRepository.save(session);
-//    }
-//
-//    // Rejeter une session
-//    public Session rejeterSession(Long id, String motif) {
-//        Session session = getSessionById(id);
-//        session.setStatus(Session.SessionStatus.REJETEE);
-//        if (motif != null && !motif.isEmpty()) {
-//            String notes = session.getNotes() != null ? session.getNotes() + "\n" : "";
-//            session.setNotes(notes + "Motif du rejet : " + motif);
-//        }
-//        return sessionRepository.save(session);
-//    }
-//
-//    // Synchroniser une session
-//    public Session synchroniserSession(Long id) {
-//        Session session = getSessionById(id);
-//        session.setSynced(true);
-//        return sessionRepository.save(session);
-//    }
-//
-//    // Obtenir les sessions non synchronisées
-//    public List<Session> getSessionsNonSynchronisees() {
-//        return sessionRepository.findBySynced(false);
-//    }
-//
-//    // Mettre à jour une session
-//    public Session updateSession(Long id, Session sessionDetails) {
-//        Session session = getSessionById(id);
-//
-//        if (sessionDetails.getType() != null) {
-//            session.setType(sessionDetails.getType());
-//        }
-//        if (sessionDetails.getStatus() != null) {
-//            session.setStatus(sessionDetails.getStatus());
-//        }
-//        if (sessionDetails.getTotalCollected() != null) {
-//            session.setTotalCollected(sessionDetails.getTotalCollected());
-//        }
-//        if (sessionDetails.getNotes() != null) {
-//            session.setNotes(sessionDetails.getNotes());
-//        }
-//        if (sessionDetails.getEndTime() != null) {
-//            session.setEndTime(sessionDetails.getEndTime());
-//        }
-//
-//        return sessionRepository.save(session);
-//    }
-//
-//    // Supprimer une session
-//    public void deleteSession(Long id) {
-//        Session session = getSessionById(id);
-//        sessionRepository.delete(session);
-//    }
-//
-//    // Obtenir le montant total collecté
-//    public Double getTotalCollected(Long id) {
-//        Session session = getSessionById(id);
-//        return session.getTotalCollected() != null ? session.getTotalCollected() : 0.0;
-//    }
-//
-//    // Calculer et mettre à jour le montant total collecté depuis les paiements
-//    public Session calculerTotalCollecte(Long id) {
-//        Session session = getSessionById(id);
-//        Double total = session.getPaiements() != null
-//                ? session.getPaiements().stream()
-//                .mapToDouble(p -> p.getMontant() != null ? p.getMontant() : 0.0)
-//                .sum()
-//                : 0.0;
-//        session.setTotalCollected(total);
-//        return sessionRepository.save(session);
-//    }
-//}
+package Commune.Dev.Services;
+
+import Commune.Dev.Dtos.*;
+
+import Commune.Dev.Models.Session;
+import Commune.Dev.Models.Session.SessionStatus;
+import Commune.Dev.Models.User;
+import Commune.Dev.Repositories.SessionRepository;
+import Commune.Dev.Repositories.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class SessionService {
+
+    private final SessionRepository sessionRepository;
+    private final UserRepository userRepository;
+    private final SessionMapper sessionMapper;
+
+    @Autowired
+    private TaskScheduler taskScheduler;
+
+    private void scheduleAutoClose(Long sessionId) {
+        taskScheduler.schedule(
+                () -> autoCloseSession(sessionId),
+                Instant.now().plus(13, ChronoUnit.HOURS)
+        );
+    }
+
+
+    @Transactional
+    public void autoCloseSession(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId).orElse(null);
+
+        if (session != null && session.getStatus() == SessionStatus.OUVERTE) {
+            session.setEndTime(LocalDateTime.now());
+            session.setStatus(SessionStatus.FERMEE);
+            sessionRepository.save(session);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<SessionDTO> getAllSessions() {
+        List<Session> sessions = sessionRepository.findAll();
+        return sessionMapper.toDTOList(sessions);
+    }
+
+    @Transactional(readOnly = true)
+    public SessionDTO getSessionById(Long id) {
+        Session session = sessionRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Session non trouvée avec l'id: " + id));
+        return sessionMapper.toDTO(session);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SessionDTO> getSessionsByUserId(Long userId) {
+        List<Session> sessions = sessionRepository.findByUserId(userId);
+        return sessionMapper.toDTOList(sessions);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SessionDTO> getSessionsByStatus(Session.SessionStatus status) {
+        List<Session> sessions = sessionRepository.findByStatus(status);
+        return sessionMapper.toDTOList(sessions);
+    }
+
+    @Transactional
+    public SessionCreatedResponseDTO createSession(CreateSessionDTO dto) {
+
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+        // Empêche plusieurs sessions ouvertes
+        List<Session> ouvertes = sessionRepository
+                .findByUserIdAndStatus(user.getId(), SessionStatus.OUVERTE);
+
+        if (!ouvertes.isEmpty()) {
+            throw new RuntimeException("Une session est déjà ouverte pour cet utilisateur");
+        }
+
+        Session session = new Session();
+        session.setUser(user);
+        session.setNomSession(dto.getNomSession());
+        session.setStartTime(LocalDateTime.now());
+        session.setStatus(SessionStatus.OUVERTE);
+        session.setTotalCollected(BigDecimal.ZERO);
+        session.setSynced(false);
+        session.setIsValid(false);
+
+        Session saved = sessionRepository.save(session);
+
+        // Fermeture automatique après 13h
+        scheduleAutoClose(saved.getId());
+
+        return SessionCreatedResponseDTO.builder()
+                .sessionId(saved.getId())
+                .nomSession(saved.getNomSession())
+                .message("Session créée et ouverte avec succès")
+                .build();
+    }
+
+
+    @Transactional
+    public SessionDTO closeSession(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session non trouvée avec l'id: " + sessionId));
+
+        if (session.getStatus() != SessionStatus.OUVERTE) {
+            throw new RuntimeException("Seules les sessions ouvertes peuvent être fermées");
+        }
+
+        session.setEndTime(LocalDateTime.now());
+        session.setStatus(SessionStatus.FERMEE);
+
+        Session updatedSession = sessionRepository.save(session);
+        return sessionMapper.toDTO(updatedSession);
+    }
+
+    @Transactional
+    public SessionDTO validateSession(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session non trouvée avec l'id: " + sessionId));
+
+        if (session.getStatus() != SessionStatus.FERMEE && session.getStatus() != SessionStatus.EN_VALIDATION) {
+            throw new RuntimeException("Seules les sessions fermées ou en validation peuvent être validées");
+        }
+
+        session.setStatus(SessionStatus.VALIDEE);
+        session.setIsValid(true);
+        session.setSynced(true);
+
+        Session updatedSession = sessionRepository.save(session);
+        return sessionMapper.toDTO(updatedSession);
+    }
+
+    @Transactional
+    public SessionDTO rejectSession(Long sessionId, String motif) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session non trouvée avec l'id: " + sessionId));
+
+        if (session.getStatus() != SessionStatus.FERMEE && session.getStatus() != SessionStatus.EN_VALIDATION) {
+            throw new RuntimeException("Seules les sessions fermées ou en validation peuvent être rejetées");
+        }
+
+        session.setStatus(SessionStatus.REJETEE);
+        session.setIsValid(false);
+
+        // Ajouter le motif aux notes
+        String notes = session.getNotes() != null ? session.getNotes() + "\n" : "";
+        notes += "Motif de rejet: " + motif;
+        session.setNotes(notes);
+
+        Session updatedSession = sessionRepository.save(session);
+        return sessionMapper.toDTO(updatedSession);
+    }
+
+    @Transactional
+    public SessionDTO submitSessionForValidation(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RuntimeException("Session non trouvée avec l'id: " + sessionId));
+
+        if (session.getStatus() != SessionStatus.FERMEE) {
+            throw new RuntimeException("Seules les sessions fermées peuvent être soumises pour validation");
+        }
+
+        session.setStatus(SessionStatus.EN_VALIDATION);
+
+        Session updatedSession = sessionRepository.save(session);
+        return sessionMapper.toDTO(updatedSession);
+    }
+
+    public Session getOpenSessionByUser(Long userId) {
+        System.out.println(userId);
+
+        return sessionRepository.findOpenSessionByUser(userId, SessionStatus.OUVERTE)
+                .orElseThrow(() -> new RuntimeException(
+                        "Aucune session ouverte trouvée pour l'utilisateur ID : " + userId
+
+                )
+
+                );
+    }
+
+
+}

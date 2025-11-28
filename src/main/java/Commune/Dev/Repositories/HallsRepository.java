@@ -12,6 +12,9 @@ import java.util.Optional;
 @Repository
 public interface HallsRepository extends JpaRepository<Halls, Integer>, JpaSpecificationExecutor<Halls> {
 
+    Optional<Halls> findByNom(String nom);
+
+
     // Custom finder methods
     List<Halls> findByNomContainingIgnoreCase(String nom);
     List<Halls> findByCodeUnique(String codeUnique);

@@ -54,6 +54,11 @@ public class Place {
     private Marchee marchee;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "droitAnnuel_id", nullable = true)
+    @JsonBackReference("droit-places")
+    private DroitAnnuel droitAnnuel;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "zone_id", nullable = true)
     @JsonBackReference("zone-places")
     private Zone zone;
@@ -72,11 +77,15 @@ public class Place {
     @JsonBackReference("carteMarchands-places")
     private List<CarteMarchands> carteMarchands;
 
-    @OneToMany(mappedBy = "place", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<HistoriqueChangementCategorie> historiqueChangements;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_marchands", nullable = true)
     @JsonBackReference("marchands-places")
     private Marchands marchands;
+
+    @OneToMany(mappedBy = "place", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonBackReference("paiements-places")
+    private List<Paiement> paiements;
 }

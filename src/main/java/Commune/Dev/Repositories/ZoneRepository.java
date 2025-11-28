@@ -9,9 +9,13 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ZoneRepository extends JpaRepository<Zone, Integer> {
+
+
+    Optional<Zone> findByNom(String nom);
 
     // Recherche par marché (obligatoire)
     List<Zone> findByMarcheeId(Integer marcheeId);
@@ -23,7 +27,7 @@ public interface ZoneRepository extends JpaRepository<Zone, Integer> {
     List<Zone> findByMarcheeIdAndNomContainingIgnoreCase(Integer marcheeId, String nom);
 
     // Recherche par nom exact
-    List<Zone> findByNom(String nom);
+//    List<Zone> findByNom(String nom);
 
     // Compter les zones par marché
     long countByMarcheeId(Integer marcheeId);

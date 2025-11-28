@@ -9,11 +9,14 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PlaceRepository extends JpaRepository<Place, Integer> {
 
-
+    Optional<Place> findByNomAndHallId(String nom, Integer hallId);
+    Optional<Place> findByNomAndZoneId(String nom, Integer zoneId);
+    Optional<Place> findByNomAndMarcheeId(String nom, Integer marcheeId);
 
     List<Place> findByMarcheeId(Long marcheeId);
     List<Place> findByHallId(Long hallId);
@@ -116,6 +119,25 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
     // Trouver les places par nom dans une zone spécifique
     @Query("SELECT p FROM Place p WHERE p.zone.id = :zoneId AND p.nom LIKE %:nom%")
     List<Place> findByZoneIdAndNomContaining(@Param("zoneId") Integer zoneId, @Param("nom") String nom);
+
+
+
+    @Query("""
+    SELECT p FROM Place p
+    LEFT JOIN p.hall h
+    LEFT JOIN p.zone z
+    LEFT JOIN p.marchee m
+    WHERE p.nom = :placeName
+      AND (:hallName IS NULL OR h.nom = :hallName)
+      AND (:zoneName IS NULL OR z.nom = :zoneName)
+      AND (:marcheeName IS NULL OR m.nom = :marcheeName)
+""")
+    Optional<Place> findByHierarchy(
+            @Param("placeName") String placeName,
+            @Param("hallName") String hallName,
+            @Param("zoneName") String zoneName,
+            @Param("marcheeName") String marcheeName
+    );
 
 
 

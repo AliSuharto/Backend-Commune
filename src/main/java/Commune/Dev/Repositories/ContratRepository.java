@@ -1,6 +1,7 @@
 package Commune.Dev.Repositories;
 
 import Commune.Dev.Models.Contrat;
+import Commune.Dev.Models.DroitAnnuel;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,8 +16,12 @@ public interface ContratRepository extends JpaRepository<Contrat, Integer> {
     // Trouver les contrats par marchand
     List<Contrat> findByIdMarchand(Integer idMarchand);
 
+    Optional<Contrat> findTopByIdMarchandOrderByDateOfStartDesc(Integer idMarchand);
+
     // Trouver les contrats par place
     List<Contrat> findByIdPlace(Integer idPlace);
+
+    List<Contrat> findByDroitAnnuelId(Integer droitAnnuelId);
 
     // Trouver les contrats par catégorie
     List<Contrat> findByCategorieId(Integer categorieId);
@@ -35,5 +40,25 @@ public interface ContratRepository extends JpaRepository<Contrat, Integer> {
             "LEFT JOIN FETCH c.place " +
             "LEFT JOIN FETCH c.categorie")
     List<Contrat> findAllWithRelations();
+
+
+
+    @Query("SELECT c FROM Contrat c WHERE c.isActif = true")
+    List<Contrat> findAllActifs();
+
+    @Query("""
+        SELECT DISTINCT c FROM Contrat c
+        JOIN FETCH c.marchand m
+        JOIN FETCH c.place p
+        LEFT JOIN FETCH m.paiements pa
+        LEFT JOIN FETCH pa.agent ag
+        WHERE c.isActif = true
+    """)
+    List<Contrat> findContratsActifsAvecTout();
+
+
+
+
+
 }
 

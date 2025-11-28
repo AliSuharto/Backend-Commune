@@ -8,9 +8,13 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MarcheeRepository extends JpaRepository<Marchee, Integer> {
+
+
+    Optional<Marchee> findByNom(String nom);
 
     // Recherche par nom (insensible à la casse)
     List<Marchee> findByNomContainingIgnoreCase(String nom);
@@ -22,7 +26,7 @@ public interface MarcheeRepository extends JpaRepository<Marchee, Integer> {
     List<Marchee> findByAdresseContainingIgnoreCase(String adresse);
 
     // Recherche par nom exact
-    List<Marchee> findByNom(String nom);
+//    List<Marchee> findByNom(String nom);
 
     // Recherche par adresse exacte
     List<Marchee> findByAdresse(String adresse);

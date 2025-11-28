@@ -29,7 +29,10 @@ public class Marchee {
     private Integer nbrPlace;
     private String description;
 
+    private Boolean isActif;
+
     @ManyToMany(mappedBy = "marchees")
+    @JsonManagedReference("marchee-user")
     private List<User> users;
 
     // Relations

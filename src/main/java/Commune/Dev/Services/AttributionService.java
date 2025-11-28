@@ -3,8 +3,10 @@ package Commune.Dev.Services;
 import Commune.Dev.Dtos.AttributionResponse;
 import Commune.Dev.Dtos.MarchandDTO;
 import Commune.Dev.Dtos.PlaceAttrDTO;
+import Commune.Dev.Models.Categorie;
 import Commune.Dev.Models.Marchands;
 import Commune.Dev.Models.Place;
+import Commune.Dev.Repositories.CategorieRepository;
 import Commune.Dev.Repositories.MarchandsRepository;
 import Commune.Dev.Repositories.PlaceRepository;
 import Commune.Dev.Request.AttributionRequest;
@@ -25,6 +27,9 @@ public class AttributionService {
     @Autowired
     private MarchandsRepository marchandsRepository;
 
+
+
+
     /**
      * Attribuer une place à un marchand
      */
@@ -34,6 +39,7 @@ public class AttributionService {
             // Vérifier que le marchand existe
             Marchands marchand = marchandsRepository.findById(request.getMarchandId())
                     .orElseThrow(() -> new RuntimeException("Marchand introuvable avec l'ID: " + request.getMarchandId()));
+
 
             // Vérifier que la place existe
             Place place = placeRepository.findById(request.getPlaceId())
@@ -62,6 +68,7 @@ public class AttributionService {
 
             // Effectuer l'attribution
             place.setMarchands(marchand);
+
             place.setIsOccuped(true);
             place.setDateDebutOccupation(LocalDateTime.now());
             place.setDateFinOccupation(null); // Pas de date de fin pour le moment
@@ -168,18 +175,51 @@ public class AttributionService {
         dto.setAdresse(place.getAdresse());
         dto.setIsOccuped(place.getIsOccuped());
 
-        if (place.getZone() != null) {
-            dto.setZoneName(place.getZone().getNom()); // Assumant que Zone a un champ 'nom'
-        }
+        // 🧩 Logique hiérarchique pour trouver le Marché associé
+        String marcheeName = null;
+        String zoneName = null;
+        String hallName = null;
 
+        // Si la place est dans un hall
         if (place.getHall() != null) {
-            dto.setHallName(place.getHall().getNom()); // Assumant que Halls a un champ 'nom'
+            hallName = place.getHall().getNom();
+
+            // Si le hall est lié à un marché directement
+            if (place.getHall().getMarchee() != null) {
+                marcheeName = place.getHall().getMarchee().getNom();
+            }
+            // Si le hall est lié à une zone, et que la zone est liée à un marché
+            else if (place.getHall().getZone() != null) {
+                zoneName = place.getHall().getZone().getNom();
+                if (place.getHall().getZone().getMarchee() != null) {
+                    marcheeName = place.getHall().getZone().getMarchee().getNom();
+                }
+            }
+        }
+        // Si la place est dans une zone (sans hall)
+        else if (place.getZone() != null) {
+            zoneName = place.getZone().getNom();
+            if (place.getZone().getMarchee() != null) {
+                marcheeName = place.getZone().getMarchee().getNom();
+            }
+        }
+        // Si la place est directement rattachée à un marché
+        else if (place.getMarchee() != null) {
+            marcheeName = place.getMarchee().getNom();
         }
 
+        // Affectation finale
+        dto.setHallName(hallName);
+        dto.setZoneName(zoneName);
+        dto.setMarcheeName(marcheeName);
+
+        // Si la place est occupée, ajouter le marchand
         if (place.getMarchands() != null) {
             dto.setMarchand(convertToMarchandDTO(place.getMarchands()));
         }
 
         return dto;
     }
+
+
 }
