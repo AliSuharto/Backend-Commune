@@ -2,7 +2,10 @@ package Commune.Dev.Controller;
 
 import Commune.Dev.Dtos.ImportResult;
 import Commune.Dev.Dtos.MarchandDTO;
+import Commune.Dev.Dtos.MarchandDetailsDTO;
+import Commune.Dev.Dtos.MarchandsPaiementDTO;
 import Commune.Dev.Models.Marchands;
+import Commune.Dev.Services.ContratService;
 import Commune.Dev.Services.MarchandsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -32,6 +35,8 @@ public class MarchandsController {
 
     @Autowired
     private MarchandsService marchandsService;
+    @Autowired
+    private ContratService contratService;
 
     // Obtenir tous les marchands
     @GetMapping
@@ -40,6 +45,23 @@ public class MarchandsController {
         List<MarchandDTO> marchands = marchandsService.getAllMarchands();
         return ResponseEntity.ok(marchands);
     }
+
+    @GetMapping("/by-cin/{cin}")
+    public ResponseEntity<MarchandDetailsDTO> getByCin(@PathVariable String cin) {
+        return ResponseEntity.ok(contratService.getMarchandByCIN(cin));
+    }
+
+
+    @GetMapping("/cin/{cin}")
+    public ResponseEntity<MarchandsPaiementDTO> getMarchandPaiementByCIN(@PathVariable String cin) {
+        return marchandsService.getMarchandsByCIN(cin)
+                .map(marchand -> {
+                    MarchandsPaiementDTO dto = marchandsService.convertMarchandToDTO(marchand);
+                    return ResponseEntity.ok(dto);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
 
 
     // Obtenir les marchands avec places

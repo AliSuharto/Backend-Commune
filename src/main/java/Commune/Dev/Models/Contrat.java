@@ -35,7 +35,6 @@ public class Contrat {
     @Column(name = "nom")
     private String nom;
 
-
     @Column(name = "dateOfStart")
     private LocalDate dateOfStart;
 

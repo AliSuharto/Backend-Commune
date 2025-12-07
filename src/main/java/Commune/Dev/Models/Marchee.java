@@ -1,5 +1,6 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,7 +33,7 @@ public class Marchee {
     private Boolean isActif;
 
     @ManyToMany(mappedBy = "marchees")
-    @JsonManagedReference("marchee-user")
+    @JsonIgnoreProperties("marchees")
     private List<User> users;
 
     // Relations

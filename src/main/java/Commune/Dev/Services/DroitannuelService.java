@@ -46,5 +46,34 @@ public class DroitannuelService {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("DroitAnnuel non trouvé avec l'id: " + id));
     }
+
+    @Transactional
+    public DroitAnnuel update(Integer id,CreateDroitAnnuelRequest request) {
+
+        // 🔍 1. Vérifier si l'entité existe
+        DroitAnnuel existant = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("DroitAnnuel non trouvé avec l'id: " + id));
+
+        // 🔧 2. Mise à jour conditionnelle
+        if (request.getDescription() != null && !request.getDescription().isBlank()) {
+            existant.setDescription(request.getDescription());
+        }
+
+        if (request.getMontant() != null ) {
+            existant.setMontant(request.getMontant());
+        }
+
+
+        // 💾 4. Sauvegarde
+        return repository.save(existant);
+    }
+
+
+
+
+
+
+
+
 }
 

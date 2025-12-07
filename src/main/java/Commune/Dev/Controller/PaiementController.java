@@ -119,12 +119,6 @@ public class PaiementController {
     /**
      * Récupérer les paiements par mode de paiement
      */
-    @GetMapping("/mode/{modePaiement}")
-    public ResponseEntity<List<PaiementDTO>> getPaiementsByMode(
-            @PathVariable String modePaiement) {
-        List<PaiementDTO> paiements = paiementService.getPaiementsByModePaiement(modePaiement);
-        return ResponseEntity.ok(paiements);
-    }
 
     /**
      * Récupérer les paiements d'un marchand pour un mois spécifique

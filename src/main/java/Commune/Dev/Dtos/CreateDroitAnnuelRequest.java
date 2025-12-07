@@ -8,7 +8,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 @Data
 public class CreateDroitAnnuelRequest {
-    @Size(max = 10, message = "La description ne peut pas dépasser 10 caractères")
+    @Size(max = 255)
     private String description;
 
     @NotNull(message = "Le montant est obligatoire")

@@ -39,6 +39,8 @@ public class ContratController {
     }
 
 
+
+
     // Récupérer un contrat par ID
     @GetMapping("/{id}")
     public ResponseEntity<Contrat> getContratById(@PathVariable Integer id) {
