@@ -131,7 +131,7 @@ public class ContratMonitoringService {
     private StatutMarchands determinerStatutEnFonctionDuRetard(LocalDate finPeriode, FrequencePaiement frequence) {
         long joursRetard = ChronoUnit.DAYS.between(finPeriode, LocalDate.now());
 
-        if (joursRetard <= 0) return StatutMarchands.A_JOUR;
+        if (joursRetard <= 1) return StatutMarchands.A_JOUR;
 
         switch (frequence) {
             case MENSUEL:

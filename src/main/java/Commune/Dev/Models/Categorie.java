@@ -27,7 +27,7 @@ public class Categorie {
     @Column(unique = true)
     private CategorieNom nom;
 
-    @Size(max = 10)
+    @Size(max = 255)
     private String description;
 
     private LocalDateTime dateCreation;

@@ -92,4 +92,6 @@ public class Marchands {
     @OneToMany(mappedBy = "marchands", cascade = CascadeType.ALL,fetch = FetchType.LAZY)
     @JsonManagedReference ("marchands-places")
     private List<Place> places;
+
+
 }

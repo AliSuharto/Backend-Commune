@@ -30,6 +30,7 @@ public class CategorieService {
 
         Categorie categorie = new Categorie();
         categorie.setNom(requestDTO.getNom());
+//        categorie.setIdCreateur(requestDTO.getIdCreateur());
         categorie.setDescription(requestDTO.getDescription());
         categorie.setMontant(requestDTO.getMontant());
         categorie.setDateCreation(LocalDateTime.now());
@@ -50,6 +51,7 @@ public class CategorieService {
         }
 
         categorie.setNom(requestDTO.getNom());
+//        categorie.setIdModificateur(requestDTO.getIdCreateur());
         categorie.setDescription(requestDTO.getDescription());
         categorie.setMontant(requestDTO.getMontant());
 

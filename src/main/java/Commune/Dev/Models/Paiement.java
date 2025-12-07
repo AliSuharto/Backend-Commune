@@ -10,7 +10,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.List;
 
 @Entity
@@ -27,10 +29,23 @@ public class Paiement {
 
     private String motif;
 
+    private Typepaiement typePaiement;
+
     @NotNull(message = "Le montant est obligatoire")
     @DecimalMin(value = "0.0", inclusive = false, message = "Le montant doit être positif")
-    @Column(precision = 10, scale = 5)
+    @Column(precision = 12, scale = 2)
     private BigDecimal montant;
+
+     // si type de paiement est droit_place
+
+    // si frequence mensuel par exemple,, 13 novembre 2025
+    private LocalDate dateDebut;
+
+    // 13 Decembre 2025( un mois)
+    private LocalDate dateFin;
+
+    //  si type de paiement droit_annuel, datedebut et datefin sans valeur.
+    private Year anneePaye;
 
     //Date de paiement ici c'est la date actuel de paiement
     @PastOrPresent(message = "La date de paiement ne peut pas être dans le futur")
@@ -63,12 +78,12 @@ public class Paiement {
     @JoinColumn(name = "id_agent", updatable = false)
     private User agent;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "quittance_id", insertable = false, updatable = false)
+    @OneToOne(optional = false)
+    @JoinColumn(name = "quittance_id", nullable = false, unique = true)
     private Quittance quittance;
 
-    @OneToOne(mappedBy = "paiement", cascade = CascadeType.ALL)
-    private Recu recus;
+//    @OneToOne(mappedBy = "paiement", cascade = CascadeType.ALL)
+//    private Recu recus;
 
     // Dans un paiement, on doit avoir l'identification du place
     @ManyToOne(fetch = FetchType.LAZY)
@@ -85,4 +100,9 @@ public class Paiement {
     public enum ModePaiement {
         cash, mobile_money, autres
     }
+    public enum Typepaiement{
+        droit_annuel,
+        droit_place
+    }
+
 }

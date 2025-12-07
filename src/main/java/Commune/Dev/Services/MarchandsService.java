@@ -1,8 +1,6 @@
 package Commune.Dev.Services;
 
-import Commune.Dev.Dtos.ImportResult;
-import Commune.Dev.Dtos.MarchandDTO;
-import Commune.Dev.Dtos.PlaceDTOmarchands;
+import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.*;
 import Commune.Dev.Repositories.*;
 import org.apache.poi.ss.usermodel.*;
@@ -23,6 +21,7 @@ import java.nio.file.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -527,6 +526,12 @@ public class MarchandsService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<MarchandsPaiementDTO> getMarchandsById(Integer id) {
+        return marchandsRepository.findById(id)
+                .map(this::convertMarchandToDTO);
+    }
+
+    @Transactional(readOnly = true)
     public List<MarchandDTO> searchMarchands(String searchTerm) {
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
             return Collections.emptyList();
@@ -671,5 +676,122 @@ public class MarchandsService {
 
         return dto;
     }
+
+    // ceci est appeler avant de faire une paiement pour juste la visibilite cote front, mais pour lancer un payement
+    // il faut
+
+
+    @Transactional(readOnly = true)
+    public Optional<Marchands> getMarchandsByCIN(String cin) {
+        if (cin == null || cin.trim().isEmpty()) return Optional.empty();
+        return Optional.ofNullable(marchandsRepository.findByNumCIN(cin.trim()));
+    }
+
+    public MarchandsPaiementDTO convertMarchandToDTO(Marchands marchand) {
+        MarchandsPaiementDTO dto = new MarchandsPaiementDTO();
+
+        // ------------------------------
+        // 1. Informations de base
+        // ------------------------------
+        dto.setNom(marchand.getNom());
+        dto.setCin(marchand.getNumCIN());
+        dto.setActivite(marchand.getActivite());
+        dto.setTelephone(marchand.getNumTel1());
+        dto.setNif(marchand.getNIF());
+        dto.setStat(marchand.getSTAT());
+
+        if (marchand.getContrats() == null || marchand.getContrats().isEmpty()) {
+            dto.setStatut("Sans contrat");
+            dto.setFrequencePaiement("N/A");
+            dto.setMontantPlace("0.00");
+            dto.setMontantAnnuel("0.00");
+            dto.setMotifPaiementPlace("Aucun contrat actif");
+            dto.setMotifPaiementAnnuel("Aucun contrat actif");
+            return dto;
+        }
+
+        Contrat contrat = marchand.getContrats().get(marchand.getContrats().size() - 1);
+
+        dto.setStatut(String.valueOf(marchand.getStatut()));
+        dto.setFrequencePaiement(
+                contrat.getFrequencePaiement() != null ?
+                        contrat.getFrequencePaiement().toString() : "NON_DÉFINI"
+        );
+
+        BigDecimal montantPlace = contrat.getCategorie() != null ? contrat.getCategorie().getMontant() : BigDecimal.ZERO;
+        BigDecimal montantAnnuel = contrat.getDroitAnnuel() != null ? contrat.getDroitAnnuel().getMontant() : BigDecimal.ZERO;
+
+        dto.setMontantPlace(montantPlace.toPlainString());
+        dto.setMontantAnnuel(montantAnnuel.toPlainString());
+
+        // ------------------------------
+        // 2. Calcule des deux motifs séparés
+        // ------------------------------
+        dto.setMotifPaiementPlace(
+                calculerMotifParType(marchand, contrat, Paiement.Typepaiement.droit_place)
+        );
+
+        dto.setMotifPaiementAnnuel(
+                calculerMotifParType(marchand, contrat, Paiement.Typepaiement.droit_annuel)
+        );
+
+        return dto;
+    }
+
+
+
+    private String calculerMotifParType(Marchands marchand, Contrat contrat, Paiement.Typepaiement type) {
+
+        // Récupérer le dernier paiement du type demandé
+        Paiement lastPayment = marchand.getPaiements().stream()
+                .filter(p -> p.getTypePaiement() == type)
+                .filter(p -> p.getDatePaiement() != null)
+                .max(Comparator.comparing(Paiement::getDatePaiement))
+                .orElse(null);
+
+        LocalDate lastStart;
+        LocalDate lastEnd;
+
+        // -----------------------------------
+        // Si un paiement existe → utiliser ses dates
+        // -----------------------------------
+        if (lastPayment != null && lastPayment.getDateDebut() != null && lastPayment.getDateFin() != null) {
+
+            lastStart = lastPayment.getDateDebut();
+            lastEnd = lastPayment.getDateFin();
+
+        } else {
+            // Aucun paiement de ce type → commencer à la date du contrat
+            lastStart = contrat.getDateOfStart();
+            if (lastStart == null) lastStart = LocalDate.now();
+
+            switch (contrat.getFrequencePaiement()) {
+                case MENSUEL -> lastEnd = lastStart.plusMonths(1).minusDays(1);
+                case HEBDOMADAIRE -> lastEnd = lastStart.plusWeeks(1).minusDays(1);
+                case JOURNALIER -> lastEnd = lastStart;
+                default -> lastEnd = lastStart;
+            }
+        }
+
+        // -----------------------------------
+        // Calcul de la prochaine période
+        // -----------------------------------
+        LocalDate nextStart = lastEnd.plusDays(1);
+        LocalDate nextEnd;
+
+        switch (contrat.getFrequencePaiement()) {
+            case MENSUEL -> nextEnd = nextStart.plusMonths(1).minusDays(1);
+            case HEBDOMADAIRE -> nextEnd = nextStart.plusWeeks(1).minusDays(1);
+            case JOURNALIER -> nextEnd = nextStart;
+            default -> nextEnd = nextStart;
+        }
+
+        // Format du motif
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
+
+        return "Paiement du " + nextStart.format(fmt) + " au " + nextEnd.format(fmt);
+    }
+
+
 
 }

@@ -68,7 +68,5 @@ public class OtpTemp {
     }
 
 
-
-    // getters / setters / constructors
 }
 

@@ -33,12 +33,12 @@ public class SessionMapper {
         }
 
         // 🔹 Génération du nom de session
-        String nomSession = generateNomSession(session);
+
 
         // 🔹 Création du builder DTO
         SessionDTO.SessionDTOBuilder builder = SessionDTO.builder()
                 .id(session.getId())
-                .nomSession(nomSession)
+                .nomSession(session.getNomSession())
                 .type(session.getType())
                 .dateSession(session.getStartTime())
                 .status(session.getStatus())
@@ -59,18 +59,7 @@ public class SessionMapper {
         return builder.build();
     }
 
-    private String generateNomSession(Session session) {
-        // Format: id-sessionId-userId-ddMMyyyy
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
-        String dateFormatted = session.getStartTime() != null
-                ? session.getStartTime().format(formatter)
-                : "N/A";
 
-        return String.format("%d-%d-%s",
-                session.getId() != null ? session.getId() : 0,
-                session.getUser() != null ? session.getUser().getId() : 0,
-                dateFormatted);
-    }
 
     public List<SessionDTO> toDTOList(List<Session> sessions) {
         return sessions.stream()
@@ -88,6 +77,7 @@ public class SessionMapper {
         dto.setDatePaiement(paiement.getDatePaiement());
         dto.setModePaiement(String.valueOf(paiement.getModePaiement()));
         dto.setMoisdePaiement(paiement.getMoisdePaiement());
+        dto.setMotif(paiement.getMotif());
 
         if (paiement.getMarchand() != null) {
             dto.setNomMarchands(paiement.getMarchand().getNom());

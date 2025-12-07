@@ -1,9 +1,14 @@
 package Commune.Dev.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -14,28 +19,27 @@ import java.util.List;
 public class Quittance {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "description")
-    private String description;
+    @Column(nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(name = "numero de debut")
-    private String numeroDeDebut;
+    private Long percepteurId;
 
-    @Column(name = "numero de fin")
-    private String numeroDeFin;
+    private String nom;
 
-    @Column(name = "quittance_restant")
-    private String quittanceRestant;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusQuittance etat;
 
-    // Relations
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "percepteur_id", insertable = false, updatable = false)
-    private Utilisateurs percepteur;
+    @JoinColumn(name = "quittance_plage_id", nullable = true)
+    @JsonBackReference
+    private QuittancePlage quittancePlage;
 
-    @OneToMany(mappedBy = "quittance", cascade = CascadeType.ALL)
-    private List<Paiement> paiements;
+    @OneToOne(mappedBy = "quittance", fetch = FetchType.LAZY)
+    private Paiement paiement;
 
-    @OneToMany(mappedBy = "quittance", cascade = CascadeType.ALL)
-    private List<Recu> recus;
+
 }

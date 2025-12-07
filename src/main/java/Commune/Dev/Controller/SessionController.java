@@ -4,6 +4,7 @@ import Commune.Dev.Dtos.SessionCreatedResponseDTO;
 import Commune.Dev.Dtos.SessionDTO;
 import Commune.Dev.Dtos.SessionResponseDTO;
 import Commune.Dev.Models.Session;
+import Commune.Dev.Request.ValidateSessionRequest;
 import Commune.Dev.Services.SessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,12 @@ public class SessionController {
     @GetMapping
     public ResponseEntity<List<SessionDTO>> getAllSessions() {
         return ResponseEntity.ok(sessionService.getAllSessions());
+    }
+
+
+    @GetMapping ("/validationEnAttente")
+    public ResponseEntity<List<SessionDTO>> getSessionEnAttenteDeValidation() {
+        return ResponseEntity.ok(sessionService.getSessionEnAttenteDeValidation());
     }
 
     // Récupérer une session par ID
@@ -77,9 +84,9 @@ public class SessionController {
     }
 
     // Valider une session
-    @PutMapping("/{id}/validate")
-    public ResponseEntity<SessionDTO> validateSession(@PathVariable Long id) {
-        return ResponseEntity.ok(sessionService.validateSession(id));
+    @PostMapping("/validate")
+    public Session validateSession(@RequestBody ValidateSessionRequest request) {
+        return sessionService.validerSession(request);
     }
 
     // Rejeter une session

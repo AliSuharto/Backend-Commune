@@ -202,29 +202,78 @@ public class ContratService {
 
             // ================== PLACES ==================
             if (contrat.getPlace() != null) {
-                Place place = contrat.getPlace();
 
+                Place place = contrat.getPlace();
+                Halls hall = place.getHall();
+                Zone zone = place.getZone();
+                Marchee marchee = place.getMarchee();
 
                 PlaceDTOmarchands placeDTO = new PlaceDTOmarchands();
+
+                placeDTO.setId(place.getId());
                 placeDTO.setNom(safe(place.getNom()));
 
-                placeDTO.setId(Integer.valueOf(safe(String.valueOf(place.getId()))));
+                String salleName = "";
+                String zoneName = "";
+                String marcheeName = "";
 
-                placeDTO.setSalleName(
-                        place.getHall() != null ? safe(place.getHall().getNom()) : ""
+                // =========================== HALL EXISTE ===========================
+                if (hall != null) {
 
-                );
+                    salleName = safe(hall.getNom());
 
-                placeDTO.setZoneName(
-                        place.getZone() != null ? safe(place.getZone().getNom()) : ""
-                );
+                    if (hall.getZone() != null) {
 
-                placeDTO.setMarcheeName(
-                        place.getMarchee() != null ? safe(place.getMarchee().getNom()) : ""
-                );
+                        zone = hall.getZone(); // overwrite zone
+
+                        zoneName = safe(zone.getNom());
+
+                        if (zone.getMarchee() != null) {
+                            marchee = zone.getMarchee();
+                            marcheeName = safe(marchee.getNom());
+                        } else if (hall.getMarchee() != null) {
+                            marchee = hall.getMarchee();
+                            marcheeName = safe(marchee.getNom());
+                        } else if (place.getMarchee() != null) {
+                            marcheeName = safe(place.getMarchee().getNom());
+                        }
+
+                    } else {
+                        // hall existe mais hall.zone n'existe pas
+                        if (hall.getMarchee() != null) {
+                            marcheeName = safe(hall.getMarchee().getNom());
+                        } else if (place.getMarchee() != null) {
+                            marcheeName = safe(place.getMarchee().getNom());
+                        }
+                    }
+
+                }
+
+                // ======================= PAS DE HALL MAIS ZONE EXISTE ========================
+                else if (zone != null) {
+
+                    zoneName = safe(zone.getNom());
+
+                    if (zone.getMarchee() != null) {
+                        marcheeName = safe(zone.getMarchee().getNom());
+                    } else if (place.getMarchee() != null) {
+                        marcheeName = safe(place.getMarchee().getNom());
+                    }
+
+                }
+
+                // ======================= NI HALL NI ZONE ========================
+                else if (marchee != null) {
+                    marcheeName = safe(marchee.getNom());
+                }
+
+                placeDTO.setSalleName(salleName);
+                placeDTO.setZoneName(zoneName);
+                placeDTO.setMarcheeName(marcheeName);
 
                 dto.getPlaces().add(placeDTO);
             }
+
 
             // ================== PAIEMENTS ==================
 
@@ -253,8 +302,8 @@ public class ContratService {
                     paiementDTO.setDernierePaiement(dateDernierPaiement);
 
                     // ---------- RECUS ----------
-                    if (p.getRecus() != null) {
-                        paiementDTO.setRecuNumero(safe(p.getRecus().getNumero()));
+                    if (p.getQuittance() != null) {
+                        paiementDTO.setRecuNumero(safe(p.getQuittance().getNom()));
                     } else {
                         paiementDTO.setRecuNumero("");
                     }
@@ -278,6 +327,149 @@ public class ContratService {
         return new ArrayList<>(map.values());
     }
 
+
+    public MarchandDetailsDTO getMarchandByCIN(String cin) {
+
+        Marchands marchand = marchandsRepository.findByNumCIN(cin);
+
+        if (marchand == null) {
+            throw new RuntimeException("Aucun marchand trouvé avec le CIN : " + cin);
+        }
+        MarchandDetailsDTO dto = new MarchandDetailsDTO();
+        dto.setId(marchand.getId());
+        dto.setNom(safe(marchand.getNom()));
+        dto.setCin(safe(marchand.getNumCIN()));
+        dto.setTelephone(safe(marchand.getNumTel1()));
+        dto.setStatut(safe(String.valueOf(marchand.getStatut())));
+        dto.setActivite(safe(marchand.getActivite()));
+
+        // =================== CONTRATS ACTIFS ===================
+        List<Contrat> contrats = contratRepository.findContratsActifsAvecTout()
+                .stream()
+                .filter(c -> c.getMarchand().getId().equals(marchand.getId()))
+                .toList();
+
+        dto.setDebutContrat(
+                contrats.stream()
+                        .map(Contrat::getDateOfStart)
+                        .filter(Objects::nonNull)
+                        .min(LocalDate::compareTo)
+                        .orElse(null)
+        );
+
+        // =================== PLACES ===================
+        for (Contrat contrat : contrats) {
+            if (contrat.getPlace() != null) {
+
+                Place place = contrat.getPlace();
+                Halls hall = place.getHall();
+                Zone zone = place.getZone();
+                Marchee marchee = place.getMarchee();
+
+                PlaceDTOmarchands placeDTO = new PlaceDTOmarchands();
+
+                placeDTO.setId(place.getId());
+                placeDTO.setNom(safe(place.getNom()));
+
+                String salleName = "";
+                String zoneName = "";
+                String marcheeName = "";
+
+                // =========================== HALL EXISTE ===========================
+                if (hall != null) {
+
+                    salleName = safe(hall.getNom());
+
+                    if (hall.getZone() != null) {
+
+                        zone = hall.getZone(); // overwrite zone
+
+                        zoneName = safe(zone.getNom());
+
+                        if (zone.getMarchee() != null) {
+                            marchee = zone.getMarchee();
+                            marcheeName = safe(marchee.getNom());
+                        } else if (hall.getMarchee() != null) {
+                            marchee = hall.getMarchee();
+                            marcheeName = safe(marchee.getNom());
+                        } else if (place.getMarchee() != null) {
+                            marcheeName = safe(place.getMarchee().getNom());
+                        }
+
+                    } else {
+                        // hall existe mais hall.zone n'existe pas
+                        if (hall.getMarchee() != null) {
+                            marcheeName = safe(hall.getMarchee().getNom());
+                        } else if (place.getMarchee() != null) {
+                            marcheeName = safe(place.getMarchee().getNom());
+                        }
+                    }
+
+                }
+
+                // ======================= PAS DE HALL MAIS ZONE EXISTE ========================
+                else if (zone != null) {
+
+                    zoneName = safe(zone.getNom());
+
+                    if (zone.getMarchee() != null) {
+                        marcheeName = safe(zone.getMarchee().getNom());
+                    } else if (place.getMarchee() != null) {
+                        marcheeName = safe(place.getMarchee().getNom());
+                    }
+
+                }
+
+                // ======================= NI HALL NI ZONE ========================
+                else if (marchee != null) {
+                    marcheeName = safe(marchee.getNom());
+                }
+
+                placeDTO.setSalleName(salleName);
+                placeDTO.setZoneName(zoneName);
+                placeDTO.setMarcheeName(marcheeName);
+
+                dto.getPlaces().add(placeDTO);
+            }
+        }
+
+        // =================== PAIEMENTS ===================
+        LocalDateTime dernierPaiement = marchand.getPaiements()
+                .stream()
+                .map(Paiement::getDatePaiement)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+
+        for (Paiement p : marchand.getPaiements()) {
+            PaiementDTO pd = new PaiementDTO();
+
+            pd.setMotif(safe(p.getMotif()));
+            pd.setMontant(p.getMontant() != null ? p.getMontant() : BigDecimal.ZERO);
+            pd.setDatePaiement(p.getDatePaiement());
+            pd.setDernierePaiement(dernierPaiement);
+
+            // ------- RECU -------
+            pd.setRecuNumero(
+                    p.getQuittance() != null ? safe(p.getQuittance().getNom()) : ""
+            );
+
+            // ------- AGENT -------
+            if (p.getAgent() != null) {
+                pd.setIdAgent(
+                        p.getAgent().getId() != null ? Math.toIntExact(p.getAgent().getId()) : null
+                );
+                pd.setNomAgent(safe(p.getAgent().getNom()));
+            } else {
+                pd.setIdAgent(null);
+                pd.setNomAgent("");
+            }
+
+            dto.getPaiements().add(pd);
+        }
+
+        return dto;
+    }
 
 
 

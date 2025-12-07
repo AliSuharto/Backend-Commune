@@ -59,6 +59,6 @@ public class Utilisateurs {
 //    @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL)
 //    private List<Paiement> paiements;
 
-    @OneToMany(mappedBy = "percepteur", cascade = CascadeType.ALL)
-    private List<Quittance> quittances;
+//    @OneToMany(mappedBy = "percepteur", cascade = CascadeType.ALL)
+//    private List<Quittance> quittances;
 }

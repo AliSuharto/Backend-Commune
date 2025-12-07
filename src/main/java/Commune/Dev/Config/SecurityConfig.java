@@ -45,7 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/marchees/**").permitAll()
                         .requestMatchers("/api/contrat/**").permitAll()
                         .requestMatchers("/api/recu-plage").permitAll()
-                        .requestMatchers("/api/recu-plage/**").permitAll()
+                        .requestMatchers("/api/quittance-plage/**").permitAll()
                         .requestMatchers("/api/places/**").permitAll()
                         .requestMatchers("/api/sessions/**").permitAll()
                         .requestMatchers("/api/paiements/**").permitAll()

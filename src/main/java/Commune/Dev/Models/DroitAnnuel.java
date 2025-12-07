@@ -24,7 +24,7 @@ public class DroitAnnuel {
 //    @Column(unique = true)
 //    private String nom;
 
-    @Size(max = 10)
+    @Size(max = 255)
     private String description;
 
     private LocalDateTime dateCreation;

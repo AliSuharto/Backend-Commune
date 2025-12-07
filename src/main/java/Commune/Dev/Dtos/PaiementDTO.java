@@ -1,5 +1,6 @@
 package Commune.Dev.Dtos;
 
+import Commune.Dev.Models.Paiement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -17,6 +18,7 @@ public class PaiementDTO {
     private Integer id;
     private BigDecimal montant;
     private LocalDateTime datePaiement;
+    private Paiement.Typepaiement typePaiement;
     private String motif;
     private String modePaiement;
     private String moisdePaiement;

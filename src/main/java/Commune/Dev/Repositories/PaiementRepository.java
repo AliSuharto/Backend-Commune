@@ -114,4 +114,10 @@ public interface PaiementRepository extends JpaRepository<Paiement, Integer> {
             @Param("placeId") Integer placeId,
             @Param("dateDebut") LocalDateTime dateDebut,
             @Param("dateFin") LocalDateTime dateFin);
+
+
+    Optional<Paiement> findTopByMarchandIdAndTypePaiementOrderByDatePaiementDesc(
+            Integer marchandId,
+            Paiement.Typepaiement typePaiement
+    );
 }

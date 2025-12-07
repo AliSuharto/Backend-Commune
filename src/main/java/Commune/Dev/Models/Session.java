@@ -22,6 +22,10 @@ public class Session {
 
     private String nomSession;
 
+    private Integer id_regisseurPincipal;
+
+    private LocalDateTime validation_date;
+
     // Type de session (PERCEPTEUR ou REGISSEUR)
     @Enumerated(EnumType.STRING)
     private SessionType type;
@@ -81,4 +85,11 @@ public class Session {
 
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
     private List<Paiement> paiements;
+
+
+
+    public void addToTotal(BigDecimal montant) {
+        if (this.totalCollected == null) this.totalCollected = BigDecimal.ZERO;
+        this.totalCollected = this.totalCollected.add(montant);
+    }
 }

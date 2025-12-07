@@ -1,6 +1,7 @@
 package Commune.Dev.Models;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -55,6 +56,7 @@ public class User implements UserDetails {
 
     @ManyToMany
     @JsonBackReference("marchee-user")
+    @JsonIgnoreProperties("user")
     private List<Marchee> marchees;
 
     @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL)
@@ -69,6 +71,14 @@ public class User implements UserDetails {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private User createdBy;
+
+
+    @OneToMany(mappedBy = "percepteur", cascade = CascadeType.ALL)
+    private List<QuittancePlage> quittancesPercues;
+
+    @OneToMany(mappedBy = "controlleur", cascade = CascadeType.ALL)
+    private List<QuittancePlage> quittancesControlees;
+
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

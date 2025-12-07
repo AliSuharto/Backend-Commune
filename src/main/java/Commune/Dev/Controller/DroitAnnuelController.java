@@ -38,4 +38,14 @@ public class DroitAnnuelController {
         DroitAnnuel droit = service.getById(id);
         return ResponseEntity.ok(droit);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DroitAnnuel> update(
+            @PathVariable Integer id,
+            @RequestBody CreateDroitAnnuelRequest request) {
+
+        DroitAnnuel updated = service.update(id, request);
+        return ResponseEntity.ok(updated);
+    }
+
 }

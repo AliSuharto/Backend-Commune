@@ -14,7 +14,9 @@ public class CategorieRequestDTO {
     @NotNull(message = "Le nom de la catégorie est obligatoire")
     private Categorie.CategorieNom nom;
 
-    @Size(max = 10, message = "La description ne peut pas dépasser 10 caractères")
+    private Integer idCreateur;
+
+    @Size(max = 255)
     private String description;
 
     @NotNull(message = "Le montant est obligatoire")

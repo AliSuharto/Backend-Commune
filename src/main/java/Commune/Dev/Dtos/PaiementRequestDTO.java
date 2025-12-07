@@ -1,5 +1,6 @@
 package Commune.Dev.Dtos;
 
+import Commune.Dev.Models.Paiement;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,19 +15,27 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class PaiementRequestDTO {
 
-    @NotNull(message = "Le montant est obligatoire")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Le montant doit être positif")
+//    @NotNull(message = "Le montant est obligatoire")
+//    @DecimalMin(value = "0.0", inclusive = false, message = "Le montant doit être positif")
     private BigDecimal montant;
 
-    @NotNull(message = "Le mode de paiement est obligatoire")
+    private BigDecimal droitAnnuel;
+
+    private Paiement.Typepaiement typePaiement;
+
+
+
+//    @NotNull(message = "Le mode de paiement est obligatoire")
     private String modePaiement; // cash, mobile_money, autres
 
-//    @NotNull(message = "Le mois de paiement est obligatoire")
+    //    @NotNull(message = "Le mois de paiement est obligatoire")
 //    @NotBlank(message = "Le mois de paiement ne peut pas être vide")
     private String moisdePaiement;
 
     // ID du marchand si enregistré, sinon null
     private Integer idMarchand;
+
+    private String motif;
 
     // Nom du marchand ambulant si non enregistré
     private String nomMarchands;
@@ -40,6 +49,7 @@ public class PaiementRequestDTO {
     @NotNull(message = "L'ID de la session est obligatoire")
     private Long sessionId;
 
-    private Integer quittanceId;
+//    private Integer quittanceId;
+
 }
 

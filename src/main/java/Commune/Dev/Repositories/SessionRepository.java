@@ -14,11 +14,12 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     // Trouver les sessions par utilisateur
     List<Session> findByUserId(Long userId);
 
+    List<Session> findByStatus(Session.SessionStatus status);
+
     // Trouver les sessions par type
     List<Session> findByType(Session.SessionType type);
 
-    // Trouver les sessions par statut
-    List<Session> findByStatus(Session.SessionStatus status);
+
 
     // Trouver les sessions non synchronisées
     List<Session> findBySynced(Boolean synced);

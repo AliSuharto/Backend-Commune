@@ -16,8 +16,9 @@ public class VerificationContratScheduler {
     }
 
     // Tous les jours à 02:00
-    @Scheduled(cron = "0 0 2 * * ?")
+    @Scheduled(cron = "0 50 9 * * ?")
     public void executerAnalyseAutomatique() {
         contratMonitoringService.analyserContrats();
     }
+
 }
