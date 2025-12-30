@@ -67,27 +67,39 @@ public class SyncService {
         log.info("📊 Marchés: {}, Zones: {}, Halls: {}", marcheeIds.size(), zoneIds.size(), hallIds.size());
 
         // 3. Charger les données des marchés
+        List<Integer> marcheeIdsInt = marcheeIds.stream()
+                .map(Long::intValue)
+                .collect(Collectors.toList());
+
         List<Marchee> marchees = new ArrayList<>();
-        if (!marcheeIds.isEmpty()) {
-            marchees = marcheeRepository.findAllById(marcheeIds);
+        if (!marcheeIdsInt.isEmpty()) {
+            marchees = marcheeRepository.findAllById(marcheeIdsInt);
         }
         response.setMarchees(marchees.stream()
                 .map(this::mapMarcheeToData)
                 .collect(Collectors.toList()));
 
         // 4. Charger les données des zones
+        List<Integer> zoneIdsInt = zoneIds.stream()
+                .map(Long::intValue)
+                .collect(Collectors.toList());
+
         List<Zone> zones = new ArrayList<>();
-        if (!zoneIds.isEmpty()) {
-            zones = zoneRepository.findAllById(zoneIds);
+        if (!zoneIdsInt.isEmpty()) {
+            zones = zoneRepository.findAllById(zoneIdsInt);
         }
         response.setZones(zones.stream()
                 .map(this::mapZoneToData)
                 .collect(Collectors.toList()));
 
         // 5. Charger les données des halls
+        List<Integer> hallIdsInt = hallIds.stream()
+                .map(Long::intValue)
+                .collect(Collectors.toList());
+
         List<Halls> halls = new ArrayList<>();
-        if (!hallIds.isEmpty()) {
-            halls = hallsRepository.findAllById(hallIds);
+        if (!hallIdsInt.isEmpty()) {
+            halls = hallsRepository.findAllById(hallIdsInt);
         }
         response.setHalls(halls.stream()
                 .map(this::mapHallToData)
@@ -173,8 +185,8 @@ public class SyncService {
                 marchee.getId(),
                 marchee.getNom(),
                 marchee.getDescription(),
-                marchee.getAdresse(),
-                marchee.getCodeUnique()
+                marchee.getAdresse()
+
         );
     }
 
@@ -183,7 +195,6 @@ public class SyncService {
                 zone.getId(),
                 zone.getNom(),
                 zone.getDescription(),
-                zone.getCodeUnique(),
                 zone.getMarchee() != null ? zone.getMarchee().getId() : null,
                 zone.getMarchee() != null ? zone.getMarchee().getNom() : null
         );
@@ -205,11 +216,10 @@ public class SyncService {
     private SyncDataResponse.PlaceData mapPlaceToData(Place place) {
         return new SyncDataResponse.PlaceData(
                 place.getId(),
-                place.getNumero(),
-                place.getCodeUnique(),
-                place.getStatut() != null ? place.getStatut().toString() : null,
-                place.getDroitAnnuel(),
-                place.getCategorie(),
+                place.getNom(),
+                place.getIsOccuped() != null ? place.getIsOccuped().toString() : null,
+                place.getDroitAnnuel().getMontant(),
+                place.getCategorie().getMontant(),
                 place.getHall() != null ? place.getHall().getId() : null,
                 place.getZone() != null ? place.getZone().getId() : null,
                 place.getMarchee() != null ? place.getMarchee().getId() : null,
@@ -224,9 +234,8 @@ public class SyncService {
                 marchand.getPrenom(),
                 marchand.getNumTel1(),
                 marchand.getNumCIN(),
-                marchand.getEmail(),
-                marchand.getAdresse(),
-                marchand.getNumeroPatente(),
+                marchand.getNIF(),
+                marchand.getSTAT(),
                 marchand.getActivite(),
                 marchand.getDateEnregistrement()
         );
@@ -239,7 +248,6 @@ public class SyncService {
                 paiement.getMontant(),
                 paiement.getTypePaiement() != null ? paiement.getTypePaiement().toString() : null,
                 paiement.getDatePaiement(),
-                paiement.getStatut() != null ? paiement.getStatut().toString() : null,
                 paiement.getMarchand() != null ? paiement.getMarchand().getId() : null,
                 paiement.getPlace() != null ? paiement.getPlace().getId() : null,
                 paiement.getAgent() != null ? paiement.getAgent().getId() : null,

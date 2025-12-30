@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -36,11 +37,11 @@ public class SyncDataResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MarcheeData {
-        private Integer id;
+        private Long id;
         private String nom;
         private String description;
         private String adresse;
-        private String codeUnique;
+
     }
 
     @Data
@@ -50,7 +51,6 @@ public class SyncDataResponse {
         private Long id;
         private String nom;
         private String description;
-        private String codeUnique;
         private Long marcheeId;
         private String marcheeName;
     }
@@ -74,29 +74,27 @@ public class SyncDataResponse {
     @AllArgsConstructor
     public static class PlaceData {
         private Integer id;
-        private Integer numero;
-        private String codeUnique;
+        private String nom;
         private String statut;
-        private Double droitannuel;
-        private Double categorie;
+        private BigDecimal droitannuel;
+        private BigDecimal categorie;
         private Long hallId;
         private Long zoneId;
         private Long marcheeId;
-        private Long marchandId;
+        private Integer marchandId;
     }
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MarchandData {
-        private Long id;
+        private Integer id;
         private String nom;
         private String prenom;
         private String telephone;
         private String cin;
-        private String email;
-        private String adresse;
-        private String numeroPatente;
+        private String Nif;
+        private String Stat;
         private String typeActivite;
         private LocalDateTime dateInscription;
     }
@@ -105,16 +103,15 @@ public class SyncDataResponse {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PaiementData {
-        private Long id;
+        private Integer id;
         private String numeroQuittance;
-        private Double montant;
+        private BigDecimal montant;
         private String typePaiement;
         private LocalDateTime datePaiement;
-        private String statut;
-        private Long marchandId;
-        private Long placeId;
+        private Integer marchandId;
+        private Integer placeId;
         private Long agentId;
-        private String periodeDebut;
-        private String periodeFin;
+        private String dateDebut;
+        private String dateFin;
     }
 }
