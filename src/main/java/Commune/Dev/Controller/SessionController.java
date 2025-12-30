@@ -35,6 +35,8 @@ public class SessionController {
     }
 
 
+
+
     @GetMapping ("/validationEnAttente")
     public ResponseEntity<List<SessionDTO>> getSessionEnAttenteDeValidation() {
         return ResponseEntity.ok(sessionService.getSessionEnAttenteDeValidation());

@@ -159,4 +159,5 @@ public interface MarcheeRepository extends JpaRepository<Marchee, Integer> {
             @Param("minCapacity") Integer minCapacity,
             @Param("maxCapacity") Integer maxCapacity);
 
+
 }

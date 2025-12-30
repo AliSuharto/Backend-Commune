@@ -54,6 +54,13 @@ public class UserController {
         return ResponseEntity.ok(ApiResponse.success(users));
     }
 
+    @GetMapping("/regisseurs-percepteurs")
+    public ResponseEntity<List<UserResponse>> getRegisseursAndPercepteurs() {
+        List<UserResponse> users = userService.getRegisseurAndPercepteur();
+        return ResponseEntity.ok(users);
+    }
+
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('DIRECTEUR')")
     public ResponseEntity<ApiResponse<UserResponse>> getUserById(@PathVariable Long id) {

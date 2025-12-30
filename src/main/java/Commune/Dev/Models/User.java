@@ -59,6 +59,16 @@ public class User implements UserDetails {
     @JsonIgnoreProperties("user")
     private List<Marchee> marchees;
 
+    @ManyToMany
+    @JsonBackReference("zone-user")
+    @JsonIgnoreProperties("user")
+    private List<Zone> zones;
+
+    @ManyToMany
+    @JsonBackReference("hall-user")
+    @JsonIgnoreProperties("user")
+    private List<Halls> halls;
+
     @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL)
     private List<Paiement> paiements;
 

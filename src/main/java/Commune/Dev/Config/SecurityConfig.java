@@ -49,6 +49,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/places/**").permitAll()
                         .requestMatchers("/api/sessions/**").permitAll()
                         .requestMatchers("/api/paiements/**").permitAll()
+                        .requestMatchers("/api/visualisation-ordo/**").permitAll()
+                        .requestMatchers("/api/users/**").permitAll()
 
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()

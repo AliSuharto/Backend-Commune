@@ -7,9 +7,11 @@ import java.time.LocalDateTime;
 
 @Data
 public class MarchandsPaiementDTO {
+    private Integer id;
     private String nom;
     private String statut;
     private String activite;
+    private String place;
     private String telephone;
     private LocalDateTime dateDebut;
     private LocalDateTime dateFin;

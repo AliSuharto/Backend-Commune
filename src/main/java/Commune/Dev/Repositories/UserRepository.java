@@ -29,4 +29,6 @@ import java.util.Optional;
         // Pour vérifier s'il existe déjà un ORDONNATEUR
         boolean existsByRole(Roletype role);
 
+        List<User> findByRoleIn(List<Roletype> roles);
+
 }

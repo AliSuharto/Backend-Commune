@@ -2,6 +2,7 @@ package Commune.Dev.Dtos;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
@@ -16,4 +17,5 @@ public class PlaceDTOmarchands {
     private Integer categorieId;
     private String categorieName;
     private String zoneName;
+    private BigDecimal montant;
 }

@@ -127,7 +127,7 @@ public class ContratService {
 
         if (contrat.getNom() == null || contrat.getNom().isEmpty()) {
             contrat.setNom("Contrat " + place.getNom() + " - " +
-                    marchand.getPrenom() + " " + marchand.getNom());
+                     marchand.getNom());
         }
 
         return contratRepository.save(contrat);

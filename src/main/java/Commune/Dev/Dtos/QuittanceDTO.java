@@ -1,2 +1,21 @@
-package Commune.Dev.Dtos;public class QuittanceDTO {
+package Commune.Dev.Dtos;
+
+import Commune.Dev.Models.StatusQuittance;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class QuittanceDTO {
+    private String nom;
+    private StatusQuittance status;   // DISPONIBLE,UTILISE
+    private LocalDateTime dateUtilisation;
+    private String nomMarchand;
+    private BigDecimal montant;
 }
+

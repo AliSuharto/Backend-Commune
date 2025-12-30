@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -120,4 +122,8 @@ public interface PaiementRepository extends JpaRepository<Paiement, Integer> {
             Integer marchandId,
             Paiement.Typepaiement typePaiement
     );
+
+    Collection<? extends Paiement> findByPlaceIdIn(ArrayList<Integer> integers);
+
+    Collection<? extends Paiement> findByMarchandIdIn(ArrayList<Integer> integers);
 }

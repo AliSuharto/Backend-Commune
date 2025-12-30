@@ -50,7 +50,7 @@ public class AttributionService {
                 return new AttributionResponse(false,
                         "Cette place est déjà occupée par " +
                                 (place.getMarchands() != null ?
-                                        place.getMarchands().getPrenom() + " " + place.getMarchands().getNom() :
+                                         place.getMarchands().getNom() :
                                         "un autre marchand"),
                         null, null);
             }
@@ -80,7 +80,7 @@ public class AttributionService {
             MarchandDTO marchandDTO = convertToMarchandDTO(marchand);
 
             return new AttributionResponse(true,
-                    "Place " + place.getNom() + " attribuée avec succès à " + marchand.getPrenom() + " " + marchand.getNom(),
+                    "Place " + place.getNom() + " attribuée avec succès à  " + marchand.getNom(),
                     placeAttrDTO, marchandDTO);
 
         } catch (Exception e) {
@@ -112,7 +112,7 @@ public class AttributionService {
 
             return new AttributionResponse(true,
                     "Place " + place.getNom() + " libérée avec succès" +
-                            (ancienMarchand != null ? " (était occupée par " + ancienMarchand.getPrenom() + " " + ancienMarchand.getNom() + ")" : ""),
+                            (ancienMarchand != null ? " (était occupée par " +  ancienMarchand.getNom() + ")" : ""),
                     convertToPlaceDTO(savedPlace),
                     ancienMarchand != null ? convertToMarchandDTO(ancienMarchand) : null);
 
@@ -153,7 +153,7 @@ public class AttributionService {
         MarchandDTO dto = new MarchandDTO();
         dto.setId(marchand.getId());
         dto.setNom(marchand.getNom());
-        dto.setPrenom(marchand.getPrenom());
+//        dto.setPrenom(marchand.getPrenom());
         dto.setNumCIN(marchand.getNumCIN());
         dto.setNumTel1(marchand.getNumTel1());
         dto.setAdress(marchand.getAdress());

@@ -88,4 +88,6 @@ public interface ZoneRepository extends JpaRepository<Zone, Integer> {
             "WHERE z.marchee.id = :marcheeId " +
             "GROUP BY z.id, z.nom")
     List<Object[]> getCompleteZoneStatistics(@Param("marcheeId") Integer marcheeId);
+
+
 }

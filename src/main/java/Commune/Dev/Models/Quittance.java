@@ -20,12 +20,14 @@ public class Quittance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
 
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    private Long percepteurId;
+    private Long percepteurId; //celui qui peut utiliser le quittance.
+
+    private LocalDateTime dateUtilisation;
 
     private String nom;
 
@@ -40,6 +42,5 @@ public class Quittance {
 
     @OneToOne(mappedBy = "quittance", fetch = FetchType.LAZY)
     private Paiement paiement;
-
 
 }

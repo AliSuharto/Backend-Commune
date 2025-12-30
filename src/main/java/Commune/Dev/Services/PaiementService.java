@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -30,6 +31,7 @@ public class PaiementService {
     private final PlaceRepository placeRepository;
     private final SessionRepository sessionRepository;
     private final ContratRepository contratRepository;
+    private final QuittanceRepository quittanceRepository;
 
 
     /**
@@ -165,6 +167,14 @@ public class PaiementService {
             throw new IllegalStateException("La session n'est pas ouverte. Paiement refusé.");
         }
 
+        Quittance quittance = quittanceRepository.findByNom(request.getNumeroQuittance())
+                .orElseThrow(() -> new RuntimeException("Numéro de quittance introuvable"));
+
+        if (quittance.getEtat() != StatusQuittance.DISPONIBLE) {
+            throw new IllegalStateException("Ce numéro de quittance est déjà utilisé");
+        }
+
+
         // 🔍 3. Vérification agent
         User agent = userRepository.findById(request.getIdAgent())
                 .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
@@ -181,6 +191,10 @@ public class PaiementService {
         paiement.setModePaiement(Paiement.ModePaiement.cash);
         paiement.setSession(session);
         paiement.setAgent(agent);
+        paiement.setQuittance(quittance);
+        quittance.setDateUtilisation(LocalDateTime.now());
+        quittance.setEtat(StatusQuittance.UTILISE);
+
 
 
         // =====================================================
@@ -267,6 +281,7 @@ public class PaiementService {
 
             paiement.setNomMarchands(request.getNomMarchands());
             paiement.setMontant(request.getMontant());
+
             paiement.setMotif(request.getMotif());
             paiement.setMoisdePaiement(request.getMoisdePaiement());
             paiement.setTypePaiement(request.getTypePaiement());
@@ -424,6 +439,7 @@ public class PaiementService {
         dto.setModePaiement(paiement.getModePaiement().name());
         dto.setMoisdePaiement(paiement.getMoisdePaiement());
         dto.setMotif(paiement.getMotif());
+        dto.setRecuNumero(paiement.getQuittance().getNom());
         dto.setNomMarchands(paiement.getNomMarchands());
         dto.setTypePaiement(paiement.getTypePaiement());
         dto.setNomAgent(paiement.getAgent().getNom());

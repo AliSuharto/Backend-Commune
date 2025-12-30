@@ -112,6 +112,7 @@ public class QuittancePlageService {
                 Quittance quittance = new Quittance();
                 quittance.setNom(nomQuittance);
                 quittance.setEtat(StatusQuittance.DISPONIBLE);
+                quittance.setPercepteurId(quittancePlage.getPercepteur().getId());
                 quittance.setQuittancePlage(quittancePlage);
                 quittances.add(quittance);
             }

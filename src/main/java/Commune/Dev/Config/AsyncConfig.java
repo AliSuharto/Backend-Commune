@@ -17,14 +17,15 @@ public class AsyncConfig {
     /**
      * Configuration du pool de threads pour l'envoi d'emails asynchrone
      */
-    @Bean(name = "emailTaskExecutor")
-    public Executor emailTaskExecutor() {
+    @Bean(name = "taskExecutor")
+    public Executor taskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(2);        // Nombre minimum de threads
-        executor.setMaxPoolSize(5);         // Nombre maximum de threads
-        executor.setQueueCapacity(100);     // Taille de la queue
-        executor.setThreadNamePrefix("Email-"); // Préfixe pour les noms de threads
-        executor.setRejectedExecutionHandler(new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setCorePoolSize(3);           // Nombre de threads minimum
+        executor.setMaxPoolSize(10);           // Nombre de threads maximum
+        executor.setQueueCapacity(100);        // Taille de la file d'attente
+        executor.setThreadNamePrefix("email-"); // Préfixe pour identifier les threads
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
         executor.initialize();
         return executor;
     }

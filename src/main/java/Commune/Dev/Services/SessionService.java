@@ -34,7 +34,7 @@ public class SessionService {
     public void autoCloseExpiredSessions() {
 
         LocalDateTime now = LocalDateTime.now();
-        List<Session> sessions = sessionRepository.findByStatus(SessionStatus.FERMEE);
+        List<Session> sessions = sessionRepository.findByStatus(SessionStatus.OUVERTE);
 
         for (Session s : sessions) {
 

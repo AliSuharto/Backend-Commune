@@ -1,6 +1,7 @@
 package Commune.Dev.Models;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,11 @@ public class Zone {
     @JoinColumn(name = "marchee_id", nullable = false)
     @JsonBackReference("marchee-zones")
     private Marchee marchee;
+
+
+    @ManyToMany(mappedBy = "zones")
+    @JsonIgnoreProperties("zones")
+    private List<User> users;
 
     // Relations OneToMany
     @OneToMany(mappedBy = "zone", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

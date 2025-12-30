@@ -9,19 +9,16 @@ import Commune.Dev.Exception.UnauthorizedException;
 import Commune.Dev.Exception.UserAlreadyExistsException;
 import Commune.Dev.Exception.UserNotFoundException;
 import Commune.Dev.Models.*;
-import Commune.Dev.Repositories.CommuneRepository;
-import Commune.Dev.Repositories.UserActivityRepository;
-import Commune.Dev.Repositories.UserRepository;
+import Commune.Dev.Repositories.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +28,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final CommuneRepository communeRepository;
     private final UserActivityRepository userActivityRepository;
+    private final HallsRepository hallsRepository;
+    private final MarcheeRepository marcheeRepository;
+    private final ZoneRepository zoneRepository;
     private final PasswordService passwordService;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -172,7 +172,7 @@ public class UserService {
 
             modifications.append("Compte ").append(request.getIsActive() ? "activé" : "désactivé").append("\n");
             user.setIsActive(request.getIsActive());
-            
+
             // Envoyer email de notification de changement de statut
             emailService.sendAccountStatusNotification(
                     user.getEmail(),
@@ -180,6 +180,87 @@ public class UserService {
                     user.getPrenom(),
                     request.getIsActive()
             );
+        }
+
+        // ========== GESTION DES MARCHÉS ==========
+        if (request.getMarcheeIds() != null) {
+            List<Marchee> newMarchees = marcheeRepository.findAllById(request.getMarcheeIds());
+            if (newMarchees.size() != request.getMarcheeIds().size()) {
+                throw new UserNotFoundException("Un ou plusieurs marchés non trouvés");
+            }
+
+            List<Long> oldMarcheeIds = user.getMarchees() != null
+                    ? user.getMarchees().stream().map(Marchee::getId).toList()
+                    : List.of();
+            List<Integer> newMarcheeIds = request.getMarcheeIds();
+
+            if (!oldMarcheeIds.equals(newMarcheeIds)) {
+                auditService.logAction(user, AuditAction.UPDATE_NAME, "marchees",
+                        oldMarcheeIds.toString(), newMarcheeIds.toString(), updatedBy,
+                        "Affectation aux marchés modifiée");
+
+                modifications.append("Marchés affectés: ")
+                        .append(newMarchees.stream()
+                                .map(Marchee::getNom)
+                                .collect(Collectors.joining(", ")))
+                        .append("\n");
+
+                user.setMarchees(newMarchees);
+            }
+        }
+
+        // ========== GESTION DES ZONES ==========
+        if (request.getZoneIds() != null) {
+            List<Zone> newZones = zoneRepository.findAllById(request.getZoneIds());
+            if (newZones.size() != request.getZoneIds().size()) {
+                throw new UserNotFoundException("Une ou plusieurs zones non trouvées");
+            }
+
+            List<Long> oldZoneIds = user.getZones() != null
+                    ? user.getZones().stream().map(Zone::getId).toList()
+                    : List.of();
+            List<Integer> newZoneIds = request.getZoneIds();
+
+            if (!oldZoneIds.equals(newZoneIds)) {
+                auditService.logAction(user, AuditAction.UPDATE_NAME, "zones",
+                        oldZoneIds.toString(), newZoneIds.toString(), updatedBy,
+                        "Affectation aux zones modifiée");
+
+                modifications.append("Zones affectées: ")
+                        .append(newZones.stream()
+                                .map(Zone::getNom)
+                                .collect(Collectors.joining(", ")))
+                        .append("\n");
+
+                user.setZones(newZones);
+            }
+        }
+
+        // ========== GESTION DES HALLS ==========
+        if (request.getHallIds() != null) {
+            List<Halls> newHalls = hallsRepository.findAllById(request.getHallIds());
+            if (newHalls.size() != request.getHallIds().size()) {
+                throw new UserNotFoundException("Un ou plusieurs halls non trouvés");
+            }
+
+            List<?> oldHallIds = user.getHalls() != null
+                    ? user.getHalls().stream().map(Halls::getId).toList()
+                    : List.of();
+            List<Integer> newHallIds = request.getHallIds();
+
+            if (!oldHallIds.equals(newHallIds)) {
+                auditService.logAction(user, AuditAction.UPDATE_NAME, "halls",
+                        oldHallIds.toString(), newHallIds.toString(), updatedBy,
+                        "Affectation aux halls modifiée");
+
+                modifications.append("Halls affectés: ")
+                        .append(newHalls.stream()
+                                .map(Halls::getNom)
+                                .collect(Collectors.joining(", ")))
+                        .append("\n");
+
+                user.setHalls(newHalls);
+            }
         }
 
         user.setUpdatedAt(LocalDateTime.now());
@@ -254,6 +335,20 @@ public class UserService {
 
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
+                .map(this::convertToUserResponse)
+                .collect(Collectors.toList());
+    }
+
+
+    public List<UserResponse> getRegisseurAndPercepteur() {
+
+        List<Roletype> roles = Arrays.asList(
+                Roletype.REGISSEUR,
+                Roletype.PERCEPTEUR
+        );
+
+        return userRepository.findByRoleIn(roles)
+                .stream()
                 .map(this::convertToUserResponse)
                 .collect(Collectors.toList());
     }

@@ -29,7 +29,7 @@ public class Marchands {
     @Size(max = 255)
     private String nom;   //nom et prenom
 
-    @NotBlank(message = "Le prénom est obligatoire")
+
     @Size(max = 255)
     private String prenom;
 
@@ -55,7 +55,7 @@ public class Marchands {
     @Size(max = 255)
     private String photo;
 
-    @Pattern(regexp = "^[0-9+\\-\\s()]+$", message = "Format de téléphone invalide")
+
     @Size(max = 255)
     private String numTel1;
 

@@ -1,6 +1,7 @@
 package Commune.Dev.Dtos;
 
 import Commune.Dev.Models.Paiement;
+import Commune.Dev.Models.StatusQuittance;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,7 +24,7 @@ public class PaiementRequestDTO {
 
     private Paiement.Typepaiement typePaiement;
 
-
+    private String numeroQuittance;
 
 //    @NotNull(message = "Le mode de paiement est obligatoire")
     private String modePaiement; // cash, mobile_money, autres

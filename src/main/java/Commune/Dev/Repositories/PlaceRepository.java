@@ -7,9 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Repository
 public interface PlaceRepository extends JpaRepository<Place, Integer> {
@@ -140,5 +138,9 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
     );
 
 
+    Collection<? extends Place> findByMarcheeIdIn(ArrayList<Long> longs);
 
+    Collection<? extends Place> findByZoneIdIn(ArrayList<Long> longs);
+
+    Collection<? extends Place> findByHallIdIn(ArrayList<Long> longs);
 }

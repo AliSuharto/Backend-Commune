@@ -128,7 +128,7 @@ public class MarchandsController {
             // Créer l'objet Marchands
             Marchands marchand = new Marchands();
             marchand.setNom(nom);
-            marchand.setPrenom(prenom);
+//            marchand.setPrenom(prenom);
             marchand.setNumCIN(numCIN);
             marchand.setNumTel1(numTel1);
             marchand.setNumTel2(numTel2);
@@ -228,7 +228,7 @@ public class MarchandsController {
             // Créer l'objet avec les nouvelles données
             Marchands marchandDetails = new Marchands();
             marchandDetails.setNom(nom);
-            marchandDetails.setPrenom(prenom);
+//            marchandDetails.setPrenom(prenom);
             marchandDetails.setNumCIN(numCIN);
             marchandDetails.setNumTel1(numTel1);
             marchandDetails.setNumTel2(numTel2);

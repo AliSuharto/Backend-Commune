@@ -42,4 +42,6 @@ public interface HallsRepository extends JpaRepository<Halls, Integer>, JpaSpeci
     Long countPlacesBySalleId(@Param("hallId") Integer hallId);
 
     boolean existsByCodeUniqueIgnoreCase(String codeUnique);
+
+
 }

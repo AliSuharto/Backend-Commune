@@ -9,5 +9,6 @@ public enum AuditAction {
     ENABLE_ACCOUNT,
     UPDATE_PROFILE,
     CHANGE_PASSWORD,
+    UPDATE_ASSIGNMENT,
     DELETE_ACCOUNT
 }
