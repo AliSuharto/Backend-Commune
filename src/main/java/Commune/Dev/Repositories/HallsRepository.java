@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,4 +46,6 @@ public interface HallsRepository extends JpaRepository<Halls, Integer>, JpaSpeci
     boolean existsByCodeUniqueIgnoreCase(String codeUnique);
 
 
+    List<Halls> findByMarcheeIdIn(List<Long> marcheeIds);
+    List<Halls> findByZoneIdIn(List<Long> zoneIds);
 }

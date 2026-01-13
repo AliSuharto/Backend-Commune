@@ -69,6 +69,7 @@ public class Marchands {
     // Méthode calculée pour savoir s'il est endette
     private Boolean estEndette;
 
+    @Enumerated(EnumType.STRING)
     private StatutMarchands statut;
 
     @PrePersist

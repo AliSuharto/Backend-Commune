@@ -120,6 +120,49 @@ public class SessionService {
                 .message("Session créée et ouverte avec succès")
                 .build();
     }
+// Pour MOBILE
+@Transactional
+public SessionCreatedResponseDTO createSessionMobile(CreateSessionDTO dto) {
+
+    User user = userRepository.findById(dto.getUserId())
+            .orElseThrow(() -> new RuntimeException("Utilisateur introuvable"));
+
+    // Vérifie si une session ouverte existe déjà
+    List<Session> ouvertes = sessionRepository.findByUserIdAndStatus(
+            user.getId(),
+            SessionStatus.OUVERTE
+    );
+
+    if (!ouvertes.isEmpty()) {
+        throw new RuntimeException("Une session est déjà ouverte pour cet utilisateur");
+    }
+
+    // Création
+    Session session = new Session();
+    session.setUser(user);
+    session.setNomSession(dto.getNomSession());
+    session.setStartTime(LocalDateTime.now());
+    session.setStatus(SessionStatus.OUVERTE);
+    session.setTotalCollected(BigDecimal.ZERO);
+    session.setSynced(false);
+    session.setIsValid(false);
+
+    Session saved = sessionRepository.save(session);
+
+    return SessionCreatedResponseDTO.builder()
+            .sessionId(saved.getId())
+            .nomSession(saved.getNomSession())
+            .message("Session créée et ouverte avec succès")
+            .build();
+}
+
+
+
+
+
+
+
+
 
     /* =======================================================================
        🔥 FERMETURE MANUELLE

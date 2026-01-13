@@ -138,9 +138,7 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
     );
 
 
-    Collection<? extends Place> findByMarcheeIdIn(ArrayList<Long> longs);
-
-    Collection<? extends Place> findByZoneIdIn(ArrayList<Long> longs);
-
-    Collection<? extends Place> findByHallIdIn(ArrayList<Long> longs);
+    List<Place> findByMarcheeIdIn(List<Long> marcheeIds);
+    List<Place> findByZoneIdIn(List<Long> zoneIds);
+    List<Place> findByHallIdIn(List<Long> hallIds);
 }

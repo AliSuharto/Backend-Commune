@@ -27,6 +27,8 @@ public class SyncService {
     private final PlaceRepository placeRepository;
     private final MarchandsRepository marchandRepository;
     private final PaiementRepository paiementRepository;
+    private final QuittanceRepository quittanceRepository;
+    private final SessionRepository sessionRepository;
 
     @Transactional(readOnly = true)
     public SyncDataResponse getSyncDataForUser(Long userId) {
@@ -46,27 +48,80 @@ public class SyncService {
         Set<Long> zoneIds = new HashSet<>();
         Set<Long> hallIds = new HashSet<>();
 
-        if (user.getMarchees() != null) {
+        // === LOGIQUE EN CASCADE ===
+
+        // A. Si l'utilisateur a des marchés assignés
+        if (user.getMarchees() != null && !user.getMarchees().isEmpty()) {
             marcheeIds.addAll(user.getMarchees().stream()
                     .map(Marchee::getId)
                     .collect(Collectors.toSet()));
-        }
 
-        if (user.getZones() != null) {
-            zoneIds.addAll(user.getZones().stream()
+            log.info("📍 Marchés assignés directement: {}", marcheeIds);
+
+            // Récupérer TOUTES les zones liées à ces marchés
+            List<Zone> zonesFromMarchees = zoneRepository.findByMarcheeIdIn(new ArrayList<>(marcheeIds));
+            zoneIds.addAll(zonesFromMarchees.stream()
                     .map(Zone::getId)
                     .collect(Collectors.toSet()));
-        }
+            log.info("📍 Zones trouvées depuis les marchés: {}", zoneIds.size());
 
-        if (user.getHalls() != null) {
-            hallIds.addAll(user.getHalls().stream()
+            // Récupérer TOUS les halls liés à ces marchés
+            List<Halls> hallsFromMarchees = hallsRepository.findByMarcheeIdIn(new ArrayList<>(marcheeIds));
+            hallIds.addAll(hallsFromMarchees.stream()
                     .map(Halls::getId)
                     .collect(Collectors.toSet()));
+            log.info("📍 Halls trouvés depuis les marchés: {}", hallIds.size());
         }
 
-        log.info("📊 Marchés: {}, Zones: {}, Halls: {}", marcheeIds.size(), zoneIds.size(), hallIds.size());
+        // B. Si l'utilisateur a des zones assignées directement
+        if (user.getZones() != null && !user.getZones().isEmpty()) {
+            Set<Long> directZoneIds = user.getZones().stream()
+                    .map(Zone::getId)
+                    .collect(Collectors.toSet());
+            zoneIds.addAll(directZoneIds);
 
-        // 3. Charger les données des marchés
+            log.info("📍 Zones assignées directement: {}", directZoneIds);
+
+            // Récupérer TOUS les halls liés à ces zones
+            List<Halls> hallsFromZones = hallsRepository.findByZoneIdIn(new ArrayList<>(directZoneIds));
+            hallIds.addAll(hallsFromZones.stream()
+                    .map(Halls::getId)
+                    .collect(Collectors.toSet()));
+            log.info("📍 Halls trouvés depuis les zones: {}", hallsFromZones.size());
+
+//            // Ajouter aussi les marchés parents de ces zones
+//            for (Zone zone : user.getZones()) {
+//                if (zone.getMarchee() != null) {
+//                    marcheeIds.add(zone.getMarchee().getId());
+//                }
+//            }
+        }
+
+        // C. Si l'utilisateur a des halls assignés directement
+        if (user.getHalls() != null && !user.getHalls().isEmpty()) {
+            Set<Long> directHallIds = user.getHalls().stream()
+                    .map(Halls::getId)
+                    .collect(Collectors.toSet());
+            hallIds.addAll(directHallIds);
+
+            log.info("📍 Halls assignés directement: {}", directHallIds);
+
+//            // Ajouter aussi les marchés et zones parents de ces halls
+//            for (Halls hall : user.getHalls()) {
+//                if (hall.getMarchee() != null) {
+//                    marcheeIds.add(hall.getMarchee().getId());
+//                }
+//                if (hall.getZone() != null) {
+//                    zoneIds.add(hall.getZone().getId());
+//                }
+//            }
+        }
+
+        log.info("📊 TOTAL - Marchés: {}, Zones: {}, Halls: {}",
+                marcheeIds.size(), zoneIds.size(), hallIds.size());
+
+
+        // 3. Charger les données complètes des marchés
         List<Integer> marcheeIdsInt = marcheeIds.stream()
                 .map(Long::intValue)
                 .collect(Collectors.toList());
@@ -79,7 +134,7 @@ public class SyncService {
                 .map(this::mapMarcheeToData)
                 .collect(Collectors.toList()));
 
-        // 4. Charger les données des zones
+        // 4. Charger les données complètes des zones
         List<Integer> zoneIdsInt = zoneIds.stream()
                 .map(Long::intValue)
                 .collect(Collectors.toList());
@@ -92,7 +147,7 @@ public class SyncService {
                 .map(this::mapZoneToData)
                 .collect(Collectors.toList()));
 
-        // 5. Charger les données des halls
+        // 5. Charger les données complètes des halls
         List<Integer> hallIdsInt = hallIds.stream()
                 .map(Long::intValue)
                 .collect(Collectors.toList());
@@ -105,7 +160,7 @@ public class SyncService {
                 .map(this::mapHallToData)
                 .collect(Collectors.toList()));
 
-        // 6. Charger toutes les places liées à ces marchés/zones/halls
+        // 6. Charger toutes les places liées (cascade depuis marchés/zones/halls)
         Set<Integer> placeIds = new HashSet<>();
         List<Place> places = new ArrayList<>();
 
@@ -163,6 +218,29 @@ public class SyncService {
                 .collect(Collectors.toList()));
 
         log.info("💰 Paiements trouvés: {}", paiements.size());
+
+        // 9. Charger les quittances de l'utilisateur (percepteur)
+        List<Quittance> quittances = quittanceRepository.findByPercepteurId(userId);
+
+        response.setQuittances(
+                quittances.stream()
+                        .map(this::mapQuittanceToData)
+                        .collect(Collectors.toList())
+        );
+
+        log.info("🧾 Quittances trouvées pour l'utilisateur {} : {}", userId, quittances.size());
+
+        List<Session> sessions = sessionRepository.findByUserId(userId);
+
+        response.setSessions(
+                sessions.stream()
+                        .map(this::mapSessionToData)
+                        .collect(Collectors.toList())
+        );
+
+        log.info("Sessions trouver pour l'utilisateur{}:{}", userId, sessions.size());
+
+
         log.info("✅ Synchronisation terminée pour l'utilisateur ID: {}", userId);
 
         return response;
@@ -175,6 +253,7 @@ public class SyncService {
                 user.getNom(),
                 user.getPrenom(),
                 user.getEmail(),
+                user.getPassword(),
                 user.getRole().toString(),
                 user.getTelephone()
         );
@@ -217,9 +296,16 @@ public class SyncService {
         return new SyncDataResponse.PlaceData(
                 place.getId(),
                 place.getNom(),
-                place.getIsOccuped() != null ? place.getIsOccuped().toString() : null,
-                place.getDroitAnnuel().getMontant(),
-                place.getCategorie().getMontant(),
+                 place.getIsOccuped() != null
+                ? (place.getIsOccuped() ? "OCCUPEE" : "LIBRE")
+                : null,
+                place.getDateDebutOccupation(),
+                place.getDroitAnnuel() != null
+                        ? place.getDroitAnnuel().getMontant()
+                        : null,
+                place.getCategorie() != null
+                        ? place.getCategorie().getMontant()
+                        : null,
                 place.getHall() != null ? place.getHall().getId() : null,
                 place.getZone() != null ? place.getZone().getId() : null,
                 place.getMarchee() != null ? place.getMarchee().getId() : null,
@@ -232,6 +318,12 @@ public class SyncService {
                 marchand.getId(),
                 marchand.getNom(),
                 marchand.getPrenom(),
+                 marchand.getStatut() != null
+                ? marchand.getStatut().toString()
+                : null,
+                marchand.getEstEndette() != null
+                        ? (marchand.getEstEndette() ? "Endette" : "A_jour")
+                        : null,
                 marchand.getNumTel1(),
                 marchand.getNumCIN(),
                 marchand.getNIF(),
@@ -244,15 +336,60 @@ public class SyncService {
     private SyncDataResponse.PaiementData mapPaiementToData(Paiement paiement) {
         return new SyncDataResponse.PaiementData(
                 paiement.getId(),
-                paiement.getQuittance().getNom(),
+//                paiement.getQuittance().getNom(),
                 paiement.getMontant(),
                 paiement.getTypePaiement() != null ? paiement.getTypePaiement().toString() : null,
                 paiement.getDatePaiement(),
+                paiement.getMotif(),
                 paiement.getMarchand() != null ? paiement.getMarchand().getId() : null,
                 paiement.getPlace() != null ? paiement.getPlace().getId() : null,
+                Math.toIntExact(paiement.getSession() != null ? paiement.getSession().getId() : null),
                 paiement.getAgent() != null ? paiement.getAgent().getId() : null,
                 paiement.getDateDebut() != null ? paiement.getDateDebut().toString() : null,
                 paiement.getDateFin() != null ? paiement.getDateFin().toString() : null
         );
     }
+
+    private SyncDataResponse.QuittanceData mapQuittanceToData(Quittance quittance) {
+
+        return new SyncDataResponse.QuittanceData(
+                quittance.getId(),
+                quittance.getCreatedAt(), // ou dateTime selon ton modèle
+//                quittance.getAgent() != null ? quittance.getAgent().getId() : null,
+                quittance.getDateUtilisation(),
+                quittance.getNom(),
+                quittance.getEtat().name(),
+                Math.toIntExact(quittance.getQuittancePlage() != null
+                        ? quittance.getQuittancePlage().getId()
+                        : null),
+                quittance.getPaiement() != null ? quittance.getPaiement().getId() : null
+
+        );
+
+    }
+
+    private SyncDataResponse.SessionData mapSessionToData(Session session) {
+
+        return new SyncDataResponse.SessionData(
+                Math.toIntExact(session.getId()),
+                session.getNomSession(),
+                session.getTotalCollected(),
+                session.getStartTime(),
+                session.getEndTime(),
+
+                // statut : null ou String
+                session.getStatus() != null
+                        ? session.getStatus().name()
+                        : null,
+
+                // regisseurPrincipalId : null ou Integer
+                session.getId_regisseurPincipal() != null
+                        ? session.getId_regisseurPincipal()
+                        : null,
+
+                session.getValidation_date()
+        );
+    }
+
+
 }

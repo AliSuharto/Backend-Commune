@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Year;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "Paiement")
@@ -105,4 +106,17 @@ public class Paiement {
         droit_place
     }
 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Paiement paiement = (Paiement) o;
+        return id != null && Objects.equals(id, paiement.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

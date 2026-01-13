@@ -126,4 +126,15 @@ public interface PaiementRepository extends JpaRepository<Paiement, Integer> {
     Collection<? extends Paiement> findByPlaceIdIn(ArrayList<Integer> integers);
 
     Collection<? extends Paiement> findByMarchandIdIn(ArrayList<Integer> integers);
+
+
+
+
+    // NOUVELLE MÉTHODE avec filtrage par type de paiement
+    boolean existsByMarchandIdAndTypePaiementAndDatePaiementBetween(
+            Long marchandId,
+            Paiement.Typepaiement typePaiement,
+            LocalDateTime start,
+            LocalDateTime end
+    );
 }

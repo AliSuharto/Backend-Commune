@@ -39,5 +39,7 @@ public interface QuittanceRepository extends JpaRepository<Quittance, Long> {
 
 
     Optional<Quittance> findByNom(String nom);   //0099887A OU 0099887a
+
+    List<Quittance> findByPercepteurId(Long userId);
 }
 

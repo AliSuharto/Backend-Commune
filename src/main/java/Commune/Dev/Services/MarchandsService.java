@@ -769,54 +769,100 @@ public class MarchandsService {
 
     private String calculerMotifParType(Marchands marchand, Contrat contrat, Paiement.Typepaiement type) {
 
-        // Récupérer le dernier paiement du type demandé
-        Paiement lastPayment = marchand.getPaiements().stream()
-                .filter(p -> p.getTypePaiement() == type)
-                .filter(p -> p.getDatePaiement() != null)
-                .max(Comparator.comparing(Paiement::getDatePaiement))
-                .orElse(null);
+        // =====================================================
+        //    CAS 1 : DROIT ANNUEL
+        // =====================================================
+        if (type == Paiement.Typepaiement.droit_annuel) {
 
-        LocalDate lastStart;
-        LocalDate lastEnd;
+            // Récupérer le dernier paiement annuel
+            Paiement dernierPaiementAnnuel = marchand.getPaiements().stream()
+                    .filter(p -> p.getTypePaiement() == Paiement.Typepaiement.droit_annuel)
+                    .filter(p -> p.getDatePaiement() != null)
+                    .max(Comparator.comparing(Paiement::getDatePaiement))
+                    .orElse(null);
 
-        // -----------------------------------
-        // Si un paiement existe → utiliser ses dates
-        // -----------------------------------
-        if (lastPayment != null && lastPayment.getDateDebut() != null && lastPayment.getDateFin() != null) {
+            int anneeProchaine;
 
-            lastStart = lastPayment.getDateDebut();
-            lastEnd = lastPayment.getDateFin();
+            if (dernierPaiementAnnuel == null) {
+                // Premier paiement : année de début du contrat
+                anneeProchaine = contrat.getDateOfStart() != null ?
+                        contrat.getDateOfStart().getYear() : LocalDate.now().getYear();
+            } else {
+                // Extraire l'année du dernier paiement et ajouter 1
+                try {
+                    String motif = dernierPaiementAnnuel.getMotif();
+                    // Extraire l'année depuis "Droit annuel 2025"
+                    int derniereAnnee = Integer.parseInt(motif.replaceAll("\\D+", ""));
+                    anneeProchaine = derniereAnnee + 1;
+                } catch (Exception e) {
+                    // Si erreur, prendre l'année actuelle
+                    anneeProchaine = LocalDate.now().getYear();
+                }
+            }
 
-        } else {
-            // Aucun paiement de ce type → commencer à la date du contrat
-            lastStart = contrat.getDateOfStart();
-            if (lastStart == null) lastStart = LocalDate.now();
+            return "Droit annuel " + anneeProchaine;
+        }
 
-            switch (contrat.getFrequencePaiement()) {
-                case MENSUEL -> lastEnd = lastStart.plusMonths(1).minusDays(1);
-                case HEBDOMADAIRE -> lastEnd = lastStart.plusWeeks(1).minusDays(1);
-                case JOURNALIER -> lastEnd = lastStart;
-                default -> lastEnd = lastStart;
+        // =====================================================
+        //    CAS 2 : DROIT DE PLACE
+        // =====================================================
+        else if (type == Paiement.Typepaiement.droit_place) {
+
+            // Récupérer le dernier paiement de place
+            Paiement lastPayment = marchand.getPaiements().stream()
+                    .filter(p -> p.getTypePaiement() == Paiement.Typepaiement.droit_place)
+                    .filter(p -> p.getDatePaiement() != null)
+                    .max(Comparator.comparing(Paiement::getDatePaiement))
+                    .orElse(null);
+
+            LocalDate nextStart;
+            LocalDate nextEnd;
+            int index = 1;
+
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
+            FrequencePaiement freq = contrat.getFrequencePaiement();
+
+            // -----------------------------------
+            // Calcul de la prochaine période
+            // -----------------------------------
+            if (lastPayment != null && lastPayment.getDateFin() != null) {
+                // On commence le jour après la fin du dernier paiement
+                nextStart = lastPayment.getDateFin().plusDays(1);
+
+                // Extraire l'index du dernier paiement
+                try {
+                    index = Integer.parseInt(lastPayment.getMoisdePaiement().replaceAll("\\D+", "")) + 1;
+                } catch (Exception e) {
+                    index = 1;
+                }
+            } else {
+                // Aucun paiement → commencer à la date du contrat
+                nextStart = contrat.getDateOfStart() != null ?
+                        contrat.getDateOfStart() : LocalDate.now();
+            }
+
+            // Calculer la date de fin selon la fréquence
+            switch (freq) {
+                case MENSUEL:
+                    nextEnd = nextStart.plusMonths(1).minusDays(1);
+                    return "Paiement du " + index + "ᵉ mois (" +
+                            nextStart.format(fmt) + " - " + nextEnd.format(fmt) + ")";
+
+                case HEBDOMADAIRE:
+                    nextEnd = nextStart.plusWeeks(1).minusDays(1);
+                    return "Paiement de la " + index + "ᵉ semaine (" +
+                            nextStart.format(fmt) + " - " + nextEnd.format(fmt) + ")";
+
+                case JOURNALIER:
+                    nextEnd = nextStart;
+                    return "Paiement du jour " + index + " (" + nextStart.format(fmt) + ")";
+
+                default:
+                    return "Fréquence non définie";
             }
         }
 
-        // -----------------------------------
-        // Calcul de la prochaine période
-        // -----------------------------------
-        LocalDate nextStart = lastEnd.plusDays(1);
-        LocalDate nextEnd;
-
-        switch (contrat.getFrequencePaiement()) {
-            case MENSUEL -> nextEnd = nextStart.plusMonths(1).minusDays(1);
-            case HEBDOMADAIRE -> nextEnd = nextStart.plusWeeks(1).minusDays(1);
-            case JOURNALIER -> nextEnd = nextStart;
-            default -> nextEnd = nextStart;
-        }
-
-        // Format du motif
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd MMMM yyyy", Locale.FRENCH);
-
-        return "Paiement du " + nextStart.format(fmt) + " au " + nextEnd.format(fmt);
+        return "Type de paiement non reconnu";
     }
     private String construireNomCompletPlace(Place place) {
 

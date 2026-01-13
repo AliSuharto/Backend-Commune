@@ -390,10 +390,10 @@ public class UserService {
         response.setNom(user.getNom());
         response.setPrenom(user.getPrenom());
         response.setPseudo(user.getPseudo());
-        response.setPhotoUrl(user.getPhotoUrl());
+//        response.setPhotoUrl(user.getPhotoUrl());
         response.setRole(user.getRole());
         response.setIsActive(user.getIsActive());
-        response.setMustChangePassword(user.getMustChangePassword());
+//        response.setMustChangePassword(user.getMustChangePassword());
         response.setTelephone(user.getTelephone());
         response.setCreatedByName(user.getCreatedBy() != null ?
                 user.getCreatedBy().getNom() + " " + user.getCreatedBy().getPrenom() : null);

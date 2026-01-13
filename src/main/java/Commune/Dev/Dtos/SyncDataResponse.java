@@ -1,5 +1,11 @@
 package Commune.Dev.Dtos;
 
+import Commune.Dev.Models.Paiement;
+import Commune.Dev.Models.QuittancePlage;
+import Commune.Dev.Models.StatusQuittance;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,6 +25,8 @@ public class SyncDataResponse {
     private List<PlaceData> places;
     private List<MarchandData> marchands;
     private List<PaiementData> paiements;
+    private List<QuittanceData> quittances;
+    private List<SessionData> sessions;
     private LocalDateTime syncTimestamp;
 
     @Data
@@ -29,6 +37,7 @@ public class SyncDataResponse {
         private String nom;
         private String prenom;
         private String email;
+        private String password;
         private String role;
         private String telephone;
     }
@@ -76,6 +85,7 @@ public class SyncDataResponse {
         private Integer id;
         private String nom;
         private String statut;
+        private LocalDateTime dateDebutOccupation;
         private BigDecimal droitannuel;
         private BigDecimal categorie;
         private Long hallId;
@@ -91,6 +101,8 @@ public class SyncDataResponse {
         private Integer id;
         private String nom;
         private String prenom;
+        private String statutDePaiement;
+        private String etat;
         private String telephone;
         private String cin;
         private String Nif;
@@ -104,14 +116,52 @@ public class SyncDataResponse {
     @AllArgsConstructor
     public static class PaiementData {
         private Integer id;
-        private String numeroQuittance;
+//        private String numeroQuittance;
         private BigDecimal montant;
         private String typePaiement;
         private LocalDateTime datePaiement;
+        private String motif;
         private Integer marchandId;
         private Integer placeId;
+        private Integer sessionId;
         private Long agentId;
         private String dateDebut;
         private String dateFin;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class QuittanceData {
+
+        private Long id;
+
+        private LocalDateTime creationDate;
+
+//        private Long percepteurId; //celui qui peut utiliser le quittance.
+
+        private LocalDateTime dateUtilisation;
+
+        private String nom;
+
+        private String etat;
+
+        private Integer QuittancePlageId;
+
+        private Integer paiementId;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SessionData{
+        private Integer Id;
+        private String nom;
+        private BigDecimal montant;
+        private LocalDateTime DateOuverture;
+        private LocalDateTime DateFermeture;
+        private String statut;
+        private Integer RegisseurPrincipalId;
+        private LocalDateTime validation_date;
     }
 }

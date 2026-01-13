@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.ArrayList;
 
 @Service
 public class ContratMonitoringService {
@@ -25,140 +26,202 @@ public class ContratMonitoringService {
     }
 
     /**
-     * Analyse l'ensemble des contrats actifs et met a jour le statut paiement des marchands.
+     * Analyse l'ensemble des contrats actifs et met à jour le statut paiement des marchands.
      */
     @Transactional
     public void analyserContrats() {
         List<Contrat> contrats = contratRepository.findAllActifs();
 
         for (Contrat contrat : contrats) {
-            if (contrat.getMarchand() == null) continue; // securite si relation lazy non chargee
+            if (contrat.getMarchand() == null) continue;
 
-            // Calcule la fenetre temporelle attendue pour le paiement courant
-            Periodne periode = calculerFenetreCourante(contrat);
+            // Analyser TOUTES les périodes échues depuis le début du contrat
+            ResultatAnalyse resultat = analyserHistoriquePaiements(contrat);
 
-            StatutMarchands statut;
-            boolean estEndette;
-
-            // 1. NOUVEAU CHECK : Si la periode de paiement n'est pas encore terminee
-            if (periode.end.toLocalDate().isAfter(LocalDate.now())) {
-
-                // La date de fin est dans le futur (la période est toujours ouverte)
-                statut = StatutMarchands.A_JOUR;
-                estEndette = false;
-
-            } else {
-                // La periode de paiement est terminee (aujourd'hui ou dans le passé)
-
-                // Verification existence paiement
-                boolean paiementOk = paiementRepository.existsByMarchandIdAndDatePaiementBetween(
-                        contrat.getMarchand().getId(),
-                        periode.start,
-                        periode.end
-                );
-
-                if (paiementOk) {
-                    statut = StatutMarchands.A_JOUR;
-                    estEndette = false;
-                } else {
-                    // Determine le statut en fonction du retard et de la frequence
-                    statut = determinerStatutEnFonctionDuRetard(
-                            periode.end.toLocalDate(),
-                            contrat.getFrequencePaiement()
-                    );
-                    // Si aucun paiement trouvé pour une période échue, le marchand est endetté
-                    estEndette = true;
-                }
-            }
-
-            // Mise a jour du marchand
+            // Mise à jour du marchand
             Marchands marchand = contrat.getMarchand();
-            marchand.setStatut(statut);
-            // Assurez-vous que la classe Marchands a bien un setter pour le champ transient
-            marchand.setEstEndette(estEndette);
+            marchand.setStatut(resultat.statut);
+            marchand.setEstEndette(resultat.estEndette);
             marchandRepository.save(marchand);
         }
     }
 
     /**
-     * Calcule la fenetre de paiement (start, end) en LocalDateTime pour la periode courante
-     * en fonction de la frequence et de la date de debut du contrat.
+     * Analyse l'historique complet des paiements pour un contrat.
+     * Vérifie toutes les périodes échues depuis le début du contrat.
+     * NOTE: On vérifie uniquement les paiements de type DROIT_PLACE (paiements récurrents).
      */
-    private Periodne calculerFenetreCourante(Contrat contrat) {
+    private ResultatAnalyse analyserHistoriquePaiements(Contrat contrat) {
         LocalDate startDate = contrat.getDateOfStart();
         LocalDate today = LocalDate.now();
 
-        if (startDate == null) {
-            // si pas de date, on considere la periode comme aujourd'hui (securite)
-            LocalDateTime s = today.atStartOfDay();
-            LocalDateTime e = today.atTime(LocalTime.MAX);
-            return new Periodne(s, e);
+        if (startDate == null || startDate.isAfter(today)) {
+            // Contrat pas encore commencé ou date invalide
+            return new ResultatAnalyse(StatutMarchands.A_JOUR, false);
         }
 
-        switch (contrat.getFrequencePaiement()) {
+        // Générer toutes les périodes échues
+        List<Periode> periodesEchues = genererPeriodesEchues(startDate, today, contrat.getFrequencePaiement());
+
+        if (periodesEchues.isEmpty()) {
+            // Aucune période échue = marchand à jour
+            return new ResultatAnalyse(StatutMarchands.A_JOUR, false);
+        }
+
+        // Vérifier chaque période échue
+        Periode premiereNonPayee = null;
+        int nombrePeriodesNonPayees = 0;
+
+        for (Periode periode : periodesEchues) {
+            // IMPORTANT: Vérifier uniquement les paiements de type DROIT_PLACE
+            boolean paiementEffectue = paiementRepository.existsByMarchandIdAndTypePaiementAndDatePaiementBetween(
+                    Long.valueOf(contrat.getMarchand().getId()),
+                    Paiement.Typepaiement.droit_place,
+                    periode.start,
+                    periode.end
+            );
+
+            if (!paiementEffectue) {
+                nombrePeriodesNonPayees++;
+                if (premiereNonPayee == null) {
+                    premiereNonPayee = periode;
+                }
+            }
+        }
+
+        // Si toutes les périodes sont payées
+        if (nombrePeriodesNonPayees == 0) {
+            return new ResultatAnalyse(StatutMarchands.A_JOUR, false);
+        }
+
+        // Il y a des périodes non payées = marchand endetté
+        StatutMarchands statut = determinerStatutSelonRetard(
+                premiereNonPayee.end.toLocalDate(),
+                nombrePeriodesNonPayees,
+                contrat.getFrequencePaiement()
+        );
+
+        return new ResultatAnalyse(statut, true);
+    }
+
+    /**
+     * Génère toutes les périodes ÉCHUES (terminées) depuis le début du contrat jusqu'à aujourd'hui.
+     */
+    private List<Periode> genererPeriodesEchues(LocalDate startDate, LocalDate today, FrequencePaiement frequence) {
+        List<Periode> periodes = new ArrayList<>();
+        LocalDate currentPeriodStart = startDate;
+
+        while (true) {
+            LocalDate currentPeriodEnd = calculerFinPeriode(currentPeriodStart, frequence);
+
+            // Si la fin de période est dans le futur, on arrête
+            if (currentPeriodEnd.isAfter(today)) {
+                break;
+            }
+
+            // Ajouter cette période échue
+            periodes.add(new Periode(
+                    currentPeriodStart.atStartOfDay(),
+                    currentPeriodEnd.atTime(LocalTime.MAX)
+            ));
+
+            // Passer à la période suivante
+            currentPeriodStart = calculerDebutPeriodeSuivante(currentPeriodStart, frequence);
+
+            // Sécurité : éviter boucle infinie
+            if (currentPeriodStart.isAfter(today)) {
+                break;
+            }
+        }
+
+        return periodes;
+    }
+
+    /**
+     * Calcule la date de fin d'une période donnée selon la fréquence.
+     */
+    private LocalDate calculerFinPeriode(LocalDate debut, FrequencePaiement frequence) {
+        switch (frequence) {
             case JOURNALIER:
-                // periode courante = aujourd'hui
-                LocalDateTime sJ = today.atStartOfDay();
-                LocalDateTime eJ = today.atTime(LocalTime.MAX);
-                return new Periodne(sJ, eJ);
+                return debut; // Même jour
 
             case HEBDOMADAIRE:
-                // calculer le nombre de semaines completes depuis startDate jusqu'a today
-                long weeks = ChronoUnit.WEEKS.between(startDate, today);
-                LocalDate periodStartWeek = startDate.plusWeeks(weeks);
-                LocalDate periodEndWeek = periodStartWeek.plusDays(6); // 7 jours - 1
-                return new Periodne(periodStartWeek.atStartOfDay(), periodEndWeek.atTime(LocalTime.MAX));
+                return debut.plusDays(6); // 7 jours (0-6)
 
             case MENSUEL:
-                // calculer le nombre de mois complets depuis startDate jusqu'a today
-                long months = ChronoUnit.MONTHS.between(startDate.withDayOfMonth(1), today.withDayOfMonth(1));
-                LocalDate periodStartMonth = startDate.plusMonths(months);
-                LocalDate periodEndMonth = periodStartMonth.plusMonths(1).minusDays(1);
-                return new Periodne(periodStartMonth.atStartOfDay(), periodEndMonth.atTime(LocalTime.MAX));
+                // Fin du mois de la date de début
+                return debut.plusMonths(1).minusDays(1);
 
             default:
-                // fallback = journee courante
-                LocalDateTime sDef = today.atStartOfDay();
-                LocalDateTime eDef = today.atTime(LocalTime.MAX);
-                return new Periodne(sDef, eDef);
+                return debut;
         }
     }
 
     /**
-     * Determine le statut selon le nombre de jours de retard (depuis la fin de la periode)
-     * en utilisant une logique differente selon la frequence de paiement.
+     * Calcule le début de la période suivante.
      */
-    private StatutMarchands determinerStatutEnFonctionDuRetard(LocalDate finPeriode, FrequencePaiement frequence) {
-        long joursRetard = ChronoUnit.DAYS.between(finPeriode, LocalDate.now());
-
-        if (joursRetard <= 1) return StatutMarchands.A_JOUR;
-
+    private LocalDate calculerDebutPeriodeSuivante(LocalDate debutActuel, FrequencePaiement frequence) {
         switch (frequence) {
-            case MENSUEL:
-                // 1 mois ≈ 30 jours
-                if (joursRetard <= 30) return StatutMarchands.RETARD_LEGER;
-                // 2 mois ≈ 60 jours
-                if (joursRetard <= 60) return StatutMarchands.RETARD_SIGNIFICATIF;
-                // 3 mois ≈ 90 jours
-                if (joursRetard <= 90) return StatutMarchands.RETARD_CRITIQUE;
-                return StatutMarchands.RETARD_PROLONGER;
+            case JOURNALIER:
+                return debutActuel.plusDays(1);
 
             case HEBDOMADAIRE:
-                // Basé sur des semaines
-                if (joursRetard <= 7) return StatutMarchands.RETARD_LEGER;
-                if (joursRetard <= 14) return StatutMarchands.RETARD_SIGNIFICATIF;
-                if (joursRetard <= 21) return StatutMarchands.RETARD_CRITIQUE;
-                return StatutMarchands.RETARD_PROLONGER;
+                return debutActuel.plusWeeks(1);
 
-            case JOURNALIER:
-                // Basé sur des jours très courts
-                if (joursRetard <= 1) return StatutMarchands.RETARD_LEGER;
-                if (joursRetard <= 3) return StatutMarchands.RETARD_SIGNIFICATIF;
-                if (joursRetard <= 7) return StatutMarchands.RETARD_CRITIQUE;
-                return StatutMarchands.RETARD_PROLONGER;
+            case MENSUEL:
+                return debutActuel.plusMonths(1);
 
             default:
-                // Logique par defaut si la frequence n'est pas geree
+                return debutActuel.plusDays(1);
+        }
+    }
+
+    /**
+     * Détermine le statut en fonction du retard et du nombre de périodes manquées.
+     */
+    private StatutMarchands determinerStatutSelonRetard(
+            LocalDate finPremierePeriodeNonPayee,
+            int nombrePeriodesNonPayees,
+            FrequencePaiement frequence) {
+
+        long joursRetard = ChronoUnit.DAYS.between(finPremierePeriodeNonPayee, LocalDate.now());
+
+        // Logique basée sur le nombre de périodes manquées ET les jours de retard
+        switch (frequence) {
+            case MENSUEL:
+                if (nombrePeriodesNonPayees == 1 && joursRetard <= 30) {
+                    return StatutMarchands.RETARD_LEGER;
+                } else if (nombrePeriodesNonPayees <= 2 || joursRetard <= 60) {
+                    return StatutMarchands.RETARD_SIGNIFICATIF;
+                } else if (nombrePeriodesNonPayees <= 3 || joursRetard <= 90) {
+                    return StatutMarchands.RETARD_CRITIQUE;
+                } else {
+                    return StatutMarchands.RETARD_PROLONGER;
+                }
+
+            case HEBDOMADAIRE:
+                if (nombrePeriodesNonPayees == 1 && joursRetard <= 7) {
+                    return StatutMarchands.RETARD_LEGER;
+                } else if (nombrePeriodesNonPayees <= 2 || joursRetard <= 14) {
+                    return StatutMarchands.RETARD_SIGNIFICATIF;
+                } else if (nombrePeriodesNonPayees <= 3 || joursRetard <= 21) {
+                    return StatutMarchands.RETARD_CRITIQUE;
+                } else {
+                    return StatutMarchands.RETARD_PROLONGER;
+                }
+
+            case JOURNALIER:
+                if (nombrePeriodesNonPayees == 1 || joursRetard <= 1) {
+                    return StatutMarchands.RETARD_LEGER;
+                } else if (nombrePeriodesNonPayees <= 3 || joursRetard <= 3) {
+                    return StatutMarchands.RETARD_SIGNIFICATIF;
+                } else if (nombrePeriodesNonPayees <= 7 || joursRetard <= 7) {
+                    return StatutMarchands.RETARD_CRITIQUE;
+                } else {
+                    return StatutMarchands.RETARD_PROLONGER;
+                }
+
+            default:
                 if (joursRetard <= 5) return StatutMarchands.RETARD_LEGER;
                 if (joursRetard <= 15) return StatutMarchands.RETARD_SIGNIFICATIF;
                 if (joursRetard <= 30) return StatutMarchands.RETARD_CRITIQUE;
@@ -167,15 +230,28 @@ public class ContratMonitoringService {
     }
 
     /**
-     * Simple DTO interne pour representer une fenetre start-end en LocalDateTime.
+     * Classe interne pour représenter une période.
      */
-    private static class Periodne {
+    private static class Periode {
         private final LocalDateTime start;
         private final LocalDateTime end;
 
-        Periodne(LocalDateTime start, LocalDateTime end) {
+        Periode(LocalDateTime start, LocalDateTime end) {
             this.start = start;
             this.end = end;
+        }
+    }
+
+    /**
+     * Classe interne pour le résultat de l'analyse.
+     */
+    private static class ResultatAnalyse {
+        private final StatutMarchands statut;
+        private final boolean estEndette;
+
+        ResultatAnalyse(StatutMarchands statut, boolean estEndette) {
+            this.statut = statut;
+            this.estEndette = estEndette;
         }
     }
 }

@@ -13,8 +13,6 @@ import jakarta.validation.constraints.NotNull;
 @NoArgsConstructor
 public class CreateSessionDTO {
 
-//    @NotNull(message = "Le type de session est obligatoire")
-//    private SessionType type;
 
     @NotNull(message = "L'ID de l'utilisateur est obligatoire")
     private Long userId;

@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "Quittance")
@@ -43,4 +44,16 @@ public class Quittance {
     @OneToOne(mappedBy = "quittance", fetch = FetchType.LAZY)
     private Paiement paiement;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Quittance quittance = (Quittance) o;
+        return id != null && Objects.equals(id, quittance.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

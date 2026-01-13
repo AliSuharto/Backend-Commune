@@ -44,4 +44,5 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
     """)
     Optional<Session> findOpenSessionByUser(Long userId, Session.SessionStatus status);
 
+    List<Session> findByUserId(Integer userId);
 }

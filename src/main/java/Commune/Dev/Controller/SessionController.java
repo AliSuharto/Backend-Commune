@@ -1,11 +1,11 @@
 package Commune.Dev.Controller;
-import Commune.Dev.Dtos.CreateSessionDTO;
-import Commune.Dev.Dtos.SessionCreatedResponseDTO;
-import Commune.Dev.Dtos.SessionDTO;
-import Commune.Dev.Dtos.SessionResponseDTO;
+import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.Session;
 import Commune.Dev.Request.ValidateSessionRequest;
+import Commune.Dev.Services.JwtManualService;
 import Commune.Dev.Services.SessionService;
+import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +20,7 @@ import java.util.List;
 public class SessionController {
 
     private final SessionService sessionService;
+    private final JwtManualService jwtManualService;
 
     // Créer une nouvelle session
     @PostMapping
@@ -27,6 +28,67 @@ public class SessionController {
         SessionCreatedResponseDTO response = sessionService.createSession(createSessionDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
+
+    /**
+     * Crée une nouvelle session avec validation JWT manuelle
+     * Accessible uniquement aux REGISSEUR et PERCEPTEUR
+     */
+    @PostMapping("/create")
+    public ResponseEntity<ApiResponse<SessionCreatedResponseDTO>> createSession(
+            @Valid @RequestBody CreateSessionDTO createSessionDTO,
+            HttpServletRequest request) {
+
+        // 🔐 Extraction du token
+        String authHeader = request.getHeader("Authorization");
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Token manquant"));
+        }
+
+        String token = authHeader.substring(7);
+
+        // 🔐 Validation du token
+        Claims claims;
+        try {
+            claims = jwtManualService.decodeAndValidate(token);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Token invalide ou expiré"));
+        }
+
+        // 🔐 Vérification du rôle
+        String role = claims.get("role", String.class);
+        Long userId = claims.get("id", Long.class);
+
+        if (!List.of("REGISSEUR", "PERCEPTEUR").contains(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Rôle non autorisé. Seuls les REGISSEUR et PERCEPTEUR peuvent créer des sessions"));
+        }
+
+        // ✅ Création de la session
+        try {
+            // Optionnel : ajouter l'ID de l'utilisateur créateur dans le DTO
+            SessionCreatedResponseDTO response = sessionService.createSessionMobile(createSessionDTO);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(
+                            "Session créée avec succès",
+                            response
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Erreur lors de la création de la session: " + e.getMessage()));
+        }
+    }
+
+
+
+
+
+
+
 
     // Récupérer toutes les sessions
     @GetMapping

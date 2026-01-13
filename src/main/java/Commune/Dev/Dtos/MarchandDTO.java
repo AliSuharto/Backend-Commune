@@ -24,6 +24,7 @@ public class MarchandDTO {
     private String numTel2;
     private LocalDateTime dateEnregistrement;
     private Boolean estEndette;
+    private String Categorie;
     private Boolean hasPlace;
     private List<PlaceDTOmarchands> places;
 }
