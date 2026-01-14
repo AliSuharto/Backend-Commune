@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: spring-app
+    env: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: postgres-db
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: postgres-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: postgres-db
+          property: password
+      - key: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+        value: org.postgresql.Driver
+
+databases:
+  - name: postgres-db
+    databaseName: postgres
+    user: postgres
