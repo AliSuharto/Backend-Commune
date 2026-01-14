@@ -3,7 +3,10 @@ services:
     name: spring-app
     env: docker
     dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /actuator/health
     envVars:
+      # Base de données
       - key: SPRING_DATASOURCE_URL
         fromDatabase:
           name: postgres-db
@@ -16,10 +19,31 @@ services:
         fromDatabase:
           name: postgres-db
           property: password
-      - key: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-        value: org.postgresql.Driver
+
+      # Email - À définir manuellement dans le dashboard
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        sync: false  # À configurer manuellement (secret)
+      - key: MAIL_PASSWORD
+        sync: false  # À configurer manuellement (secret)
+
+      # Sécurité - À définir manuellement
+      - key: JWT_SECRET
+        generateValue: true  # Render génère automatiquement
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # Logs
+      - key: LOG_FILE_PATH
+        value: /tmp/application.log
 
 databases:
   - name: postgres-db
-    databaseName: postgres
-    user: postgres
+    databaseName: postgresali
+    user: postgresali
+    plan: free
