@@ -1,21 +1,20 @@
-
 services:
   postgres:
     image: postgres:15
     container_name: postgres_db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: aliS
-      POSTGRES_DB: postgres
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,22 +24,26 @@ services:
     container_name: adminer
     restart: always
     ports:
-      - "8081:8080"
+      - "${ADMINER_PORT:-8081}:8080"
     networks:
       - app-network
+    depends_on:
+      - postgres
 
   spring_app:
     build: .
-    image: dev_spring_app
-    container_name: spring_app
+    image: ${APP_IMAGE_NAME:-dev_spring_app}
+    container_name: ${APP_CONTAINER_NAME:-spring_app}
     restart: always
     ports:
-      - "8080:8080"
+      - "${PORT:-8080}:8080"
+    env_file:
+      - .env
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/postgres
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: aliS
-      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      # Override database URL for Docker network
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${DB_NAME}?connectTimeout=60&socketTimeout=60
+      DATABASE_USERNAME: ${DB_USER}
+      DATABASE_PASSWORD: ${DB_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
