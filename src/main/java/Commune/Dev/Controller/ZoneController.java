@@ -1,5 +1,6 @@
 package Commune.Dev.Controller;
 
+import Commune.Dev.Dtos.ZoneDTO;
 import Commune.Dev.Dtos.ZoneResponse;
 import Commune.Dev.Models.Zone;
 import Commune.Dev.Request.ZoneRequest;
@@ -45,26 +46,28 @@ public class ZoneController {
 
     // READ - Récupérer toutes les zones
     @GetMapping
-    public ResponseEntity<List<Zone>> getAllZones() {
+    public ResponseEntity<List<ZoneDTO>> getAllZones() {
         try {
-            List<Zone> zones = zoneService.findAll();
+            List<ZoneDTO> zones = zoneService.findAll();
             return ResponseEntity.ok(zones);
         } catch (Exception e) {
+            // Log l'erreur pour le debug
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-
-    // READ - Récupérer une zone par son ID
-    @GetMapping("/{id}")
-    public ResponseEntity<Zone> getZoneById(@PathVariable Integer id) {
-        try {
-            Optional<Zone> zone = zoneService.findById(id);
-            return zone.map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
+//
+//    @GetMapping("/{id}")
+//    public ResponseEntity<ZoneDTO> getZoneById(@PathVariable Integer id) {
+//        try {
+//            ZoneDTO zone = zoneService.findById(id);
+//            return ResponseEntity.ok(zone);
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+//        }
+//    }
 
     // READ - Récupérer des zones par leurs IDs
     @PostMapping("/by-ids")

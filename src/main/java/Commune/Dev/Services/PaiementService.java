@@ -439,7 +439,7 @@ public class PaiementService {
         dto.setModePaiement(paiement.getModePaiement().name());
         dto.setMoisdePaiement(paiement.getMoisdePaiement());
         dto.setMotif(paiement.getMotif());
-        dto.setRecuNumero(paiement.getQuittance().getNom());
+        if(paiement.getQuittance() !=null) dto.setRecuNumero(paiement.getQuittance().getNom());
         dto.setNomMarchands(paiement.getNomMarchands());
         dto.setTypePaiement(paiement.getTypePaiement());
         dto.setNomAgent(paiement.getAgent().getNom());

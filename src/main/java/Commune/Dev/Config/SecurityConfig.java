@@ -38,7 +38,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/public/**").permitAll()
-                        .requestMatchers("/api/public/zones").permitAll()
+                        .requestMatchers("/api/public/zones/**").permitAll()
                         .requestMatchers("/api/public/commune-check").permitAll()
                         .requestMatchers("/api/public/droits-annuels").permitAll()
                         .requestMatchers("/api/marchees").permitAll()

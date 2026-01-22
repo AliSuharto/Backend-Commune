@@ -2,6 +2,7 @@ package Commune.Dev.Controller;
 
 import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.User;
+import Commune.Dev.Request.ForgotPasswordRequest;
 import Commune.Dev.Services.AuthService;
 import Commune.Dev.Services.UserService;
 import jakarta.validation.Valid;
@@ -37,4 +38,17 @@ public class AuthController {
         UserResponse userResponse = userService.convertToUserResponse(user);
         return ResponseEntity.ok(ApiResponse.success(userResponse));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Un mot de passe temporaire a été envoyé à votre adresse email",
+                null
+        ));
+    }
+
+
+
+
 }

@@ -21,7 +21,7 @@ public class VisualisationOrdoController {
     private final VisualisationOrdoService visualisationOrdoService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ORDONNATEUR', 'ORDO')")
+    @PreAuthorize("hasAnyRole('ORDONNATEUR', 'DIRECTEUR')")
     @Operation(
             summary = "Récupérer les données de visualisation",
             description = "Récupère toutes les données nécessaires pour le tableau de bord Ordo incluant les statistiques des marchés, marchands et utilisateurs"

@@ -15,7 +15,26 @@ import java.util.Optional;
 @Repository
 public interface ZoneRepository extends JpaRepository<Zone, Integer> {
 
+    @Query("SELECT DISTINCT z FROM Zone z LEFT JOIN FETCH z.marchee")
+    List<Zone> findAllWithMarchee();
 
+    // Recherche par marché
+    @Query("SELECT z FROM Zone z WHERE z.marchee.id = :marcheeId")
+    List<Zone> findByMarcheeId(@Param("marcheeId") Long marcheeId);
+
+
+    // Recherche par marché et nom
+    @Query("SELECT z FROM Zone z WHERE z.marchee.id = :marcheeId AND LOWER(z.nom) LIKE LOWER(CONCAT('%', :nom, '%'))")
+    List<Zone> findByMarcheeIdAndNomContainingIgnoreCase(@Param("marcheeId") Long marcheeId, @Param("nom") String nom);
+
+    // Comptage
+    @Query("SELECT COUNT(z) FROM Zone z WHERE z.marchee.id = :marcheeId")
+    long countByMarcheeId(@Param("marcheeId") Long marcheeId);
+
+    // Suppression par marché
+    @Modifying
+    @Query("DELETE FROM Zone z WHERE z.marchee.id = :marcheeId")
+    void deleteByMarcheeId(@Param("marcheeId") Long marcheeId);
     Optional<Zone> findByNom(String nom);
 
     // Recherche par marché (obligatoire)

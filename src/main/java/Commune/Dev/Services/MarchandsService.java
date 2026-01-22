@@ -112,13 +112,12 @@ public class MarchandsService {
     // ============================
 
     @Transactional
-    public Marchands saveMarchandWithPhoto(Marchands marchand, MultipartFile photo) throws IOException {
+    public Marchands saveMarchand(Marchands marchand) throws IOException {
+        if (marchand.getNumCIN() == null || marchand.getNumCIN().isBlank()) {
+            throw new IllegalArgumentException("Le numéro CIN est obligatoire");
+        }
         if (marchandsRepository.existsByNumCIN(marchand.getNumCIN())) {
             throw new IllegalArgumentException("Un marchand avec ce numéro CIN existe déjà");
-        }
-
-        if (photo != null && !photo.isEmpty()) {
-            marchand.setPhoto(savePhoto(photo));
         }
 
         return marchandsRepository.save(marchand);
@@ -623,7 +622,6 @@ public class MarchandsService {
         MarchandDTO dto = new MarchandDTO();
         dto.setId(marchand.getId());
         dto.setNom(marchand.getNom());
-
         dto.setAdress(marchand.getAdress());
         dto.setDescription(marchand.getDescription());
         dto.setNumCIN(marchand.getNumCIN());
@@ -633,7 +631,8 @@ public class MarchandsService {
         dto.setNumTel2(marchand.getNumTel2());
         dto.setDateEnregistrement(marchand.getDateEnregistrement());
         dto.setEstEndette(marchand.getEstEndette());
-
+        dto.setNif(marchand.getNIF());
+        dto.setStat(marchand.getSTAT());
         List<PlaceDTOmarchands> places = Optional.ofNullable(marchand.getPlaces())
                 .orElse(Collections.emptyList())
                 .stream()
@@ -658,6 +657,7 @@ public class MarchandsService {
         if (place.getCategorie() != null) {
             dto.setCategorieId(place.getCategorie().getId());
             dto.setCategorieName(String.valueOf(place.getCategorie().getNom()));
+            dto.setMontant(place.getCategorie().getMontant());
         }
 
         // --- HALL ---

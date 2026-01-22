@@ -1,15 +1,17 @@
 package Commune.Dev.Dtos;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ZoneResponse {
-    private Integer id;
+@Builder
+public class UserDtoZone{
     private String nom;
-    private Integer marcheeId;
-    private String marcheeNom;
+    private String prenom;
+    private String email;
+    private String telephone;
 }

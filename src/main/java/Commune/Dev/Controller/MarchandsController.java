@@ -5,6 +5,7 @@ import Commune.Dev.Dtos.MarchandDTO;
 import Commune.Dev.Dtos.MarchandDetailsDTO;
 import Commune.Dev.Dtos.MarchandsPaiementDTO;
 import Commune.Dev.Models.Marchands;
+import Commune.Dev.Request.CreateMarchandRequest;
 import Commune.Dev.Services.ContratService;
 import Commune.Dev.Services.MarchandsService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,6 @@ public class MarchandsController {
 
     // Obtenir tous les marchands
     @GetMapping
-
     public ResponseEntity<List<MarchandDTO>> getAllMarchands() {
         List<MarchandDTO> marchands = marchandsService.getAllMarchands();
         return ResponseEntity.ok(marchands);
@@ -113,49 +113,43 @@ public class MarchandsController {
 //    }
 
     // Créer un nouveau marchand avec photo optionnelle
-    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PostMapping(
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     public ResponseEntity<?> createMarchand(
-            @RequestParam("nom") String nom,
-            @RequestParam("prenom") String prenom,
-            @RequestParam("numCIN") String numCIN,
-            @RequestParam(value = "numTel1", required = false) String numTel1,
-            @RequestParam(value = "numTel2", required = false) String numTel2,
-            @RequestParam(value = "adress", required = false) String adress,
-            @RequestParam(value = "description", required = false) String description,
-            @RequestParam(value = "photo", required = false) MultipartFile photo) {
-
+            @RequestBody CreateMarchandRequest request
+    ) {
         try {
-            // Créer l'objet Marchands
             Marchands marchand = new Marchands();
-            marchand.setNom(nom);
-//            marchand.setPrenom(prenom);
-            marchand.setNumCIN(numCIN);
-            marchand.setNumTel1(numTel1);
-            marchand.setNumTel2(numTel2);
-            marchand.setAdress(adress);
-            marchand.setDescription(description);
+            marchand.setNom(request.getNom());
+            marchand.setPrenom(request.getPrenom());
+            marchand.setNumCIN(request.getNumCIN());
+            marchand.setNumTel1(request.getNumTel1());
+            marchand.setSTAT(request.getStat());
+            marchand.setNIF(request.getNif());
+            marchand.setActivite(request.getActivite());
+            marchand.setAdress(request.getAdress());
+            marchand.setDescription(request.getDescription());
 
-            // Sauvegarder avec photo
-            Marchands savedMarchand = marchandsService.saveMarchandWithPhoto(marchand, photo);
+            Marchands savedMarchand =
+                    marchandsService.saveMarchand(marchand);
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Marchand créé avec succès");
-            response.put("marchand", savedMarchand);
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-        } catch (IllegalArgumentException e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
+            return ResponseEntity
+                    .status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "success", true,
+                            "message", "Marchand créé avec succès",
+                            "marchand", savedMarchand
+                    ));
 
         } catch (Exception e) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Erreur lors de la création du marchand: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "success", false,
+                            "message", e.getMessage()
+                    ));
         }
     }
 

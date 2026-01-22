@@ -48,7 +48,7 @@ public class UserController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('DIRECTEUR')")
+    @PreAuthorize("hasAnyRole('ORDONNATEUR', 'DIRECTEUR')")
     public ResponseEntity<ApiResponse<List<UserResponse>>> getAllUsers() {
         List<UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(ApiResponse.success(users));
@@ -112,5 +112,36 @@ public class UserController {
         response.setDescription(audit.getDescription());
         return response;
     }
+
+    @PutMapping("/{userId}/disable")
+    @PreAuthorize("hasAnyRole('DIRECTEUR', 'ORDONNATEUR')")
+    public ResponseEntity<UserResponse> disableUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        log.info("Demande de désactivation de l'utilisateur {} par {}", userId, currentUser.getEmail());
+        UserResponse response = userService.disableUser(userId, currentUser);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Réactiver un utilisateur
+     * Accessible uniquement par DIRECTEUR et ORDONNATEUR
+     */
+    @PutMapping("/{userId}/enable")
+    @PreAuthorize("hasAnyRole('DIRECTEUR', 'ORDONNATEUR')")
+    public ResponseEntity<UserResponse> enableUser(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        log.info("Demande de réactivation de l'utilisateur {} par {}", userId, currentUser.getEmail());
+        UserResponse response = userService.enableUser(userId, currentUser);
+        return ResponseEntity.ok(response);
+    }
+
+
+
+
+
 }
 

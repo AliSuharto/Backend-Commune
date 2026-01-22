@@ -38,11 +38,6 @@ public class CreationService {
         this.userActivityRepository=userActivityRepository;
     }
 
-
-
-
-
-
     // Step 1: init -> generate OTP and send mail
     public void initOrdonnateur(UserDto dto) {
         // optionally: check if email already used

@@ -8,7 +8,13 @@ public enum AuditAction {
     DISABLE_ACCOUNT,
     ENABLE_ACCOUNT,
     UPDATE_PROFILE,
-    CHANGE_PASSWORD,
+
     UPDATE_ASSIGNMENT,
-    DELETE_ACCOUNT
+    DELETE_ACCOUNT,
+    // Actions pour la gestion des mots de passe
+    RESET_PASSWORD,              // Réinitialisation réussie du mot de passe
+    FAILED_PASSWORD_RESET,       // Tentative échouée de réinitialisation
+    CHANGE_PASSWORD,            // Changement de mot de passe par l'utilisateur
+    VALID_SESSION,
+    VALID_PAIEMENT
 }

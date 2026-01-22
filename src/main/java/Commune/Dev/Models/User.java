@@ -1,6 +1,7 @@
 package Commune.Dev.Models;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -56,18 +57,15 @@ public class User implements UserDetails {
     private String telephone;
 
     @ManyToMany
-    @JsonBackReference("marchee-user")
-    @JsonIgnoreProperties("user")
+    @JsonIgnore
     private List<Marchee> marchees;
 
     @ManyToMany
-    @JsonBackReference("zone-user")
-    @JsonIgnoreProperties("user")
+    @JsonIgnore
     private List<Zone> zones;
 
     @ManyToMany
-    @JsonBackReference("hall-user")
-    @JsonIgnoreProperties("user")
+    @JsonIgnore
     private List<Halls> halls;
 
     @OneToMany(mappedBy = "agent", cascade = CascadeType.ALL)

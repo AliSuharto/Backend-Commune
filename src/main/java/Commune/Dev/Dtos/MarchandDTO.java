@@ -23,6 +23,8 @@ public class MarchandDTO {
     private String numTel1;
     private String numTel2;
     private LocalDateTime dateEnregistrement;
+    private String stat;
+    private String nif;
     private Boolean estEndette;
     private String Categorie;
     private Boolean hasPlace;

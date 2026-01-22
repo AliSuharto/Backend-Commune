@@ -1,11 +1,10 @@
 package Commune.Dev.Services;
 
 import Commune.Dev.Dtos.ApiResponse;
+import Commune.Dev.Dtos.MarcheeInfoDTO;
 import Commune.Dev.Dtos.MarcheeResponseDTO;
-import Commune.Dev.Models.Marchee;
-import Commune.Dev.Models.Zone;
-import Commune.Dev.Models.Place;
-import Commune.Dev.Models.Halls;
+import Commune.Dev.Exception.MarcheeNotEmptyException;
+import Commune.Dev.Models.*;
 import Commune.Dev.Repositories.HallsRepository;
 import Commune.Dev.Repositories.MarcheeRepository;
 import Commune.Dev.Repositories.PlaceRepository;
@@ -170,6 +169,239 @@ public class MarcheeService {
         return marcheeRepository.findAll();
     }
 
+    @Transactional
+    public MarcheeInfoDTO getMarcheeInfo(Long marcheeId) {
+        Marchee marchee = marcheeRepository.findById(Math.toIntExact(marcheeId))
+                .orElseThrow(() -> new RuntimeException("Marché non trouvé avec l'ID: " + marcheeId));
+
+        return convertToDTOS(marchee);
+    }
+
+    @Transactional
+    public List<MarcheeInfoDTO> getAllMarcheesInfo() {
+        return marcheeRepository.findAll()
+                .stream()
+                .map(this::convertToDTOS)
+                .collect(Collectors.toList());
+    }
+
+
+    private MarcheeInfoDTO convertToDTOS(Marchee marchee) {
+
+        MarcheeInfoDTO dto = new MarcheeInfoDTO();
+
+        // ===== Infos de base =====
+        dto.setId(marchee.getId().intValue());
+        dto.setNom(marchee.getNom());
+        dto.setAdresse(marchee.getAdresse());
+
+        // ===== Calcul agrégé des places =====
+        List<Place> allPlaces = getAllPlacesOfMarchee(marchee);
+
+        long placeOccupe = countOccupied(allPlaces);
+        long placeLibre  = countFree(allPlaces);
+        long totalPlaces = allPlaces.size();
+
+        dto.setNbrPlace((int) totalPlaces);
+        dto.setPlaceOccupe(placeOccupe);
+        dto.setPlaceLibre(placeLibre);
+
+        double occupationRate = totalPlaces > 0
+                ? (placeOccupe * 100.0) / totalPlaces
+                : 0.0;
+
+        dto.setOccupationRate(Math.round(occupationRate * 100.0) / 100.0);
+
+        // ===== Totaux structurels =====
+        dto.setTotalZones((long) marchee.getZones().size());
+        dto.setTotalHalls((long) marchee.getHalls().size());
+
+        // ===== Zones =====
+        dto.setZone(marchee.getZones()
+                .stream()
+                .map(this::convertZoneToDTO)
+                .collect(Collectors.toList()));
+
+        // ===== Halls sans zone =====
+        dto.setHall(marchee.getHalls()
+                .stream()
+                .filter(h -> h.getZone() == null)
+                .map(this::convertHallToDTO)
+                .collect(Collectors.toList()));
+
+        // ===== Places directement rattachées au marché =====
+        dto.setPlace(marchee.getPlaces()
+                .stream()
+                .map(this::convertPlaceToDTO)
+                .collect(Collectors.toList()));
+
+        // ===== Utilisateurs =====
+        dto.setUser(marchee.getUsers() != null
+                ? marchee.getUsers().stream()
+                .map(this::convertUserToDTO)
+                .collect(Collectors.toList())
+                : List.of());
+
+        return dto;
+    }
+
+
+    private MarcheeInfoDTO.ZoneDto convertZoneToDTO(Zone zone) {
+
+        MarcheeInfoDTO.ZoneDto dto = new MarcheeInfoDTO.ZoneDto();
+
+        dto.setId(zone.getId());
+        dto.setNom(zone.getNom());
+
+        List<Place> allPlaces = getAllPlacesOfZone(zone);
+
+        dto.setNbrPlace(allPlaces.size());
+        dto.setPlaceOccupe(countOccupied(allPlaces));
+        dto.setPlaceLibre(countFree(allPlaces));
+
+        dto.setNbrHall(zone.getHalls().size());
+
+        // ===== Halls de la zone =====
+        dto.setHall(zone.getHalls()
+                .stream()
+                .map(this::convertHallToDTO)
+                .collect(Collectors.toList()));
+
+        // ===== Places directement dans la zone =====
+        dto.setPlace(zone.getPlaces()
+                .stream()
+                .filter(p -> p.getHall() == null)
+                .map(this::convertPlaceToDTO)
+                .collect(Collectors.toList()));
+
+        // ===== Utilisateurs =====
+        dto.setUser(zone.getUsers() != null
+                ? zone.getUsers().stream()
+                .map(this::convertUserToDTO)
+                .collect(Collectors.toList())
+                : List.of());
+
+        return dto;
+    }
+
+
+    private MarcheeInfoDTO.HallDto convertHallToDTO(Halls hall) {
+
+        MarcheeInfoDTO.HallDto dto = new MarcheeInfoDTO.HallDto();
+
+        dto.setId(hall.getId());
+        dto.setNom(hall.getNom());
+
+        List<Place> allPlaces = hall.getPlaces();
+
+        dto.setNbrPlace(allPlaces.size());
+        dto.setPlaceOccupe(countOccupied(allPlaces));
+        dto.setPlaceLibre(countFree(allPlaces));
+
+        dto.setZoneId(hall.getZone() != null ? hall.getZone().getId().intValue() : null);
+        dto.setMarcheeId(hall.getMarchee() != null ? hall.getMarchee().getId().intValue() : null);
+
+        dto.setPlace(allPlaces
+                .stream()
+                .map(this::convertPlaceToDTO)
+                .collect(Collectors.toList()));
+
+        dto.setUser(hall.getUsers() != null
+                ? hall.getUsers().stream()
+                .map(this::convertUserToDTO)
+                .collect(Collectors.toList())
+                : List.of());
+
+        return dto;
+    }
+
+    private MarcheeInfoDTO.PlaceDto convertPlaceToDTO(Place place) {
+
+        MarcheeInfoDTO.PlaceDto dto = new MarcheeInfoDTO.PlaceDto();
+
+        dto.setId(place.getId().longValue());
+        dto.setNom(place.getNom());
+        dto.setStatut(Boolean.TRUE.equals(place.getIsOccuped()) ? "Occupée" : "Libre");
+
+        dto.setHallId(place.getHall() != null ? place.getHall().getId().intValue() : null);
+        dto.setZoneId(place.getZone() != null ? place.getZone().getId().intValue() : null);
+        dto.setMarcheeId(place.getMarchee() != null ? place.getMarchee().getId().intValue() : null);
+        dto.setNomMarchand(
+                place.getMarchands() != null
+                        ? place.getMarchands().getNom()
+                        : null
+        );
+        dto.setStatutMarchand(
+                place.getMarchands() != null
+                        ? String.valueOf(place.getMarchands().getStatut())
+                        : null
+        );
+        return dto;
+    }
+
+
+    private MarcheeInfoDTO.UserInfoDto convertUserToDTO(User user) {
+
+        MarcheeInfoDTO.UserInfoDto dto = new MarcheeInfoDTO.UserInfoDto();
+
+        dto.setId(user.getId());
+        dto.setNom(user.getNom() + " " + user.getPrenom());
+        dto.setPhoneNumber(user.getTelephone());
+        dto.setMail(user.getEmail());
+
+        return dto;
+    }
+    private List<Place> getAllPlacesOfMarchee(Marchee marchee) {
+
+        List<Place> places = new ArrayList<>();
+
+        // Places directement dans le marché
+        places.addAll(marchee.getPlaces());
+
+        // Halls sans zone
+        marchee.getHalls().stream()
+                .filter(h -> h.getZone() == null)
+                .forEach(h -> places.addAll(h.getPlaces()));
+
+        // Zones + halls des zones
+        for (Zone zone : marchee.getZones()) {
+            places.addAll(getAllPlacesOfZone(zone));
+        }
+
+        return places;
+    }
+    private List<Place> getAllPlacesOfZone(Zone zone) {
+
+        List<Place> places = new ArrayList<>();
+
+        // Places directement dans la zone
+        places.addAll(zone.getPlaces());
+
+        // Places dans les halls de la zone
+        for (Halls hall : zone.getHalls()) {
+            places.addAll(hall.getPlaces());
+        }
+
+        return places;
+    }
+    private long countOccupied(List<Place> places) {
+        return places.stream()
+                .filter(p -> Boolean.TRUE.equals(p.getIsOccuped()))
+                .count();
+    }
+
+    private long countFree(List<Place> places) {
+        return places.stream()
+                .filter(p -> p.getIsOccuped() == null || !p.getIsOccuped())
+                .count();
+    }
+
+
+
+
+
+
+
     public Optional<Marchee> findById(Integer id) {
         return marcheeRepository.findById(id);
     }
@@ -208,8 +440,57 @@ public class MarcheeService {
     }
 
     // DELETE operations
-    public void deleteById(Integer id) {
-        marcheeRepository.deleteById(id);
+    @Transactional
+    public void deleteById(Long id) {
+        Marchee marchee = marcheeRepository.findById(Math.toIntExact(id))
+                .orElseThrow(() -> new RuntimeException("Marché non trouvé avec l'ID: " + id));
+
+        // Vérifier si le marché est vide
+        if (!isMarcheeEmpty(marchee)) {
+            throw new MarcheeNotEmptyException(
+                    "Le marché '" + marchee.getNom() + "' n'est pas vide. " +
+                            "Veuillez supprimer d'abord tous les zones, halls et places associés."
+            );
+        }
+
+        marcheeRepository.deleteById(Math.toIntExact(id));
+    }
+
+    /**
+     * Vérifie si un marché est vide (sans zones, halls, ni places)
+     */
+    private boolean isMarcheeEmpty(Marchee marchee) {
+        boolean hasNoZones = marchee.getZones() == null || marchee.getZones().isEmpty();
+        boolean hasNoHalls = marchee.getHalls() == null || marchee.getHalls().isEmpty();
+        boolean hasNoPlaces = marchee.getPlaces() == null || marchee.getPlaces().isEmpty();
+
+        return hasNoZones && hasNoHalls && hasNoPlaces;
+    }
+
+    /**
+     * Méthode optionnelle pour obtenir des détails sur ce qui empêche la suppression
+     */
+    public String getMarcheeDeleteBlockingInfo(Long id) {
+        Marchee marchee = marcheeRepository.findById(Math.toIntExact(id))
+                .orElseThrow(() -> new RuntimeException("Marché non trouvé avec l'ID: " + id));
+
+        List<String> blockingElements = new ArrayList<>();
+
+        if (marchee.getZones() != null && !marchee.getZones().isEmpty()) {
+            blockingElements.add(marchee.getZones().size() + " zone(s)");
+        }
+        if (marchee.getHalls() != null && !marchee.getHalls().isEmpty()) {
+            blockingElements.add(marchee.getHalls().size() + " hall(s)");
+        }
+        if (marchee.getPlaces() != null && !marchee.getPlaces().isEmpty()) {
+            blockingElements.add(marchee.getPlaces().size() + " place(s)");
+        }
+
+        if (blockingElements.isEmpty()) {
+            return "Le marché est vide et peut être supprimé";
+        }
+
+        return "Le marché contient : " + String.join(", ", blockingElements);
     }
 
     public void delete(Marchee marchee) {
@@ -411,8 +692,15 @@ public class MarcheeService {
     private MarcheeResponseDTO convertToDTO(Marchee marchee) {
         List<Place> allPlaces = collectAllPlaces(marchee);
 
-        long totalPlaces = allPlaces.size();
-        long placesOccupees = allPlaces.stream().filter(Place::getIsOccuped).count();
+        // Filtrer les places null
+        long totalPlaces = allPlaces.stream()
+                .filter(Objects::nonNull)  // ← Ajoutez ceci
+                .count();
+
+        long placesOccupees = allPlaces.stream()
+                .filter(Objects::nonNull)  // ← Ajoutez ceci
+                .filter(place -> place.getIsOccuped() != null && place.getIsOccuped())
+                .count();
 
         double tauxOccupation = totalPlaces > 0
                 ? (placesOccupees * 100.0 / totalPlaces)
@@ -424,7 +712,7 @@ public class MarcheeService {
                 marchee.getAdresse(),
                 totalPlaces,
                 placesOccupees,
-                Math.round(tauxOccupation * 100.0) / 100.0 // arrondi à 2 décimales
+                Math.round(tauxOccupation * 100.0) / 100.0
         );
     }
 
@@ -435,32 +723,50 @@ public class MarcheeService {
     private List<Place> collectAllPlaces(Marchee marchee) {
         List<Place> allPlaces = new ArrayList<>();
 
-        // 1. Les places directement dans le marché
-        if (marchee.getPlaces() != null)
-            allPlaces.addAll(marchee.getPlaces());
-
-        // 2. Les places dans chaque zone du marché
-        if (marchee.getZones() != null) {
-            marchee.getZones().forEach(zone -> {
-                if (zone.getPlaces() != null)
-                    allPlaces.addAll(zone.getPlaces());
-
-                // 3. Les places dans les halls d'une zone
-                if (zone.getHalls() != null) {
-                    zone.getHalls().forEach(hall -> {
-                        if (hall.getPlaces() != null)
-                            allPlaces.addAll(hall.getPlaces());
-                    });
-                }
-            });
+        // 1. Places directement dans le marché
+        if (marchee.getPlaces() != null) {
+            marchee.getPlaces().stream()
+                    .filter(Objects::nonNull)  // ← Filtre les null
+                    .forEach(allPlaces::add);
         }
 
-        // 4. Les places dans les halls directement rattachés au marché
+        // 2. Places dans chaque zone
+        if (marchee.getZones() != null) {
+            marchee.getZones().stream()
+                    .filter(Objects::nonNull)  // ← Filtre les zones null
+                    .forEach(zone -> {
+                        if (zone.getPlaces() != null) {
+                            zone.getPlaces().stream()
+                                    .filter(Objects::nonNull)
+                                    .forEach(allPlaces::add);
+                        }
+
+                        // 3. Places dans les halls des zones
+                        if (zone.getHalls() != null) {
+                            zone.getHalls().stream()
+                                    .filter(Objects::nonNull)
+                                    .forEach(hall -> {
+                                        if (hall.getPlaces() != null) {
+                                            hall.getPlaces().stream()
+                                                    .filter(Objects::nonNull)
+                                                    .forEach(allPlaces::add);
+                                        }
+                                    });
+                        }
+                    });
+        }
+
+        // 4. Halls directement rattachés au marché
         if (marchee.getHalls() != null) {
-            marchee.getHalls().forEach(hall -> {
-                if (hall.getPlaces() != null)
-                    allPlaces.addAll(hall.getPlaces());
-            });
+            marchee.getHalls().stream()
+                    .filter(Objects::nonNull)
+                    .forEach(hall -> {
+                        if (hall.getPlaces() != null) {
+                            hall.getPlaces().stream()
+                                    .filter(Objects::nonNull)
+                                    .forEach(allPlaces::add);
+                        }
+                    });
         }
 
         return allPlaces;

@@ -1,6 +1,9 @@
 package Commune.Dev.Controller;
 import Commune.Dev.Dtos.ApiResponse;
+import Commune.Dev.Dtos.MarcheeDTO;
+import Commune.Dev.Dtos.MarcheeInfoDTO;
 import Commune.Dev.Dtos.MarcheeResponseDTO;
+import Commune.Dev.Exception.MarcheeNotEmptyException;
 import Commune.Dev.Models.Marchee;
 import Commune.Dev.Services.MarcheeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +46,7 @@ public class MarcheeController {
 
 
     // READ - Récupérer tous les marchés
-    //@GetMapping
+//    @GetMapping
 //    public ResponseEntity<List<Marchee>> getAllMarchees() {
 //        try {
 //            List<Marchee> marchees = marcheeService.findAll();
@@ -51,15 +56,34 @@ public class MarcheeController {
 //            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 //        }
 //    }
+
     @GetMapping
     public ResponseEntity<List<MarcheeResponseDTO>> getAllMarcheeStats() {
         try {
             List<MarcheeResponseDTO> marcheeStats = marcheeService.getAllMarcheeStats();
             return ResponseEntity.ok(marcheeStats);
         } catch (Exception e) {
+            e.printStackTrace(); // ← Ceci va afficher la stack trace complète
+            System.err.println("ERREUR DÉTAILLÉE: " + e.getClass().getName());
+            System.err.println("MESSAGE: " + e.getMessage());
+            if (e.getCause() != null) {
+                System.err.println("CAUSE: " + e.getCause().getMessage());
+            }
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/{id}/info")
+    public ResponseEntity<MarcheeInfoDTO> getMarcheeInfo(@PathVariable Long id) {
+        try {
+            MarcheeInfoDTO marcheeInfo = marcheeService.getMarcheeInfo(id);
+            return ResponseEntity.ok(marcheeInfo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(null);
+        }
+    }
+
 
     // READ - Récupérer un marché par son ID
     @GetMapping("/{id}")
@@ -196,16 +220,29 @@ public class MarcheeController {
 
     // DELETE - Supprimer un marché par son ID
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMarchee(@PathVariable Integer id) {
+    public ResponseEntity<?> deleteMarchee(@PathVariable Long id) {
         try {
-            if (marcheeService.existsById(id)) {
-                marcheeService.deleteById(id);
-                return ResponseEntity.noContent().build();
-            } else {
-                return ResponseEntity.notFound().build();
+            // Vérifier si le marché existe
+            if (!marcheeService.existsById(Math.toIntExact(id))) {
+                return ResponseEntity
+                        .status(HttpStatus.NOT_FOUND)
+                        .body(createErrorResponse("Marché non trouvé avec l'ID: " + id));
             }
+
+            // Tenter la suppression
+            marcheeService.deleteById(id);
+
+            return ResponseEntity.noContent().build();
+
+        } catch (MarcheeNotEmptyException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(createErrorResponse(e.getMessage()));
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(createErrorResponse("Erreur lors de la suppression du marché: " + e.getMessage()));
         }
     }
 
@@ -320,5 +357,12 @@ public class MarcheeController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    private Map<String, Object> createErrorResponse(String message) {
+        Map<String, Object> error = new HashMap<>();
+        error.put("error", message);
+        error.put("timestamp", LocalDateTime.now());
+        return error;
     }
 }

@@ -50,7 +50,7 @@ public class SalleServiceImpl implements SalleService {
             halls.setZone(null); // Explicitement null
         } else if (createDTO.getZoneId() != null) {
             // Salle dans une zone
-            Zone zone = zoneRepository.findById(createDTO.getZoneId())
+            Zone zone = zoneRepository.findById(Math.toIntExact(Long.valueOf(createDTO.getZoneId())))
                     .orElseThrow(() -> new RuntimeException("Zone non trouvée"));
             halls.setZone(zone);
             halls.setMarchee(null); // Explicitement null - le marché sera accessible via zone.marchee
@@ -101,7 +101,7 @@ public class SalleServiceImpl implements SalleService {
             if (updateDTO.getZoneId() == null) {
                 throw new RuntimeException("ID de la zone requis pour déplacer la salle vers une zone");
             }
-            Zone zone = zoneRepository.findById(updateDTO.getZoneId())
+            Zone zone = zoneRepository.findById(Math.toIntExact(Long.valueOf(updateDTO.getZoneId())))
                     .orElseThrow(() -> new RuntimeException("Zone non trouvée"));
             halls.setZone(zone);
             halls.setMarchee(null); // Retirer du marché direct
@@ -114,7 +114,7 @@ public class SalleServiceImpl implements SalleService {
                 halls.setMarchee(marchee);
             } else if (updateDTO.getZoneId() != null && halls.getMarchee() == null) {
                 // Mise à jour de la zone pour une salle déjà dans une zone
-                Zone zone = zoneRepository.findById(updateDTO.getZoneId())
+                Zone zone = zoneRepository.findById(Math.toIntExact(Long.valueOf(updateDTO.getZoneId())))
                         .orElseThrow(() -> new RuntimeException("Zone non trouvée"));
                 halls.setZone(zone);
             }
@@ -226,7 +226,7 @@ public class SalleServiceImpl implements SalleService {
                 halls1.setZone(null);
             } else if (createDTO.getZoneId() != null) {
                 // Salle dans une zone
-                Zone zone = zoneRepository.findById(createDTO.getZoneId())
+                Zone zone = zoneRepository.findById(Math.toIntExact(Long.valueOf(createDTO.getZoneId())))
                         .orElseThrow(() -> new RuntimeException("Zone non trouvée: " + createDTO.getZoneId()));
                 halls1.setZone(zone);
                 halls1.setMarchee(null);

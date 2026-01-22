@@ -105,7 +105,7 @@ public class ContratService {
         // GESTION PLACE
         // =========================
         place.setCategorie(categorie);
-
+        place.setIsOccuped(true);
         // =========================
         // DATES ET ETAT
         // =========================

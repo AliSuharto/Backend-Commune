@@ -1,18 +1,21 @@
 package Commune.Dev.Services;
 
+import Commune.Dev.Dtos.ZoneDTO;
+import Commune.Dev.Dtos.ZoneMapper;
 import Commune.Dev.Dtos.ZoneResponse;
+import Commune.Dev.Models.Halls;
 import Commune.Dev.Models.Marchee;
+import Commune.Dev.Models.Place;
 import Commune.Dev.Models.Zone;
 import Commune.Dev.Repositories.MarcheeRepository;
 import Commune.Dev.Repositories.ZoneRepository;
 import Commune.Dev.Request.ZoneRequest;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ZoneService {
@@ -23,6 +26,8 @@ public class ZoneService {
     private MarcheeRepository marcheeRepository;
     @Autowired
     private PlaceService placeService;
+    @Autowired
+    private  ZoneMapper zoneMapper;
 
     // =================== CREATE ===================
     public Zone save(Zone zone) {
@@ -46,7 +51,6 @@ public class ZoneService {
         ZoneResponse response = new ZoneResponse();
         response.setId(Math.toIntExact(savedZone.getId()));
         response.setNom(savedZone.getNom());
-        response.setDescription(savedZone.getDescription());
         response.setMarcheeId(Math.toIntExact(marchee.getId()));
         response.setMarcheeNom(marchee.getNom());
 
@@ -58,8 +62,114 @@ public class ZoneService {
     }
 
     // =================== READ ===================
-    public List<Zone> findAll() {
-        return zoneRepository.findAll();
+    @Transactional
+    public List<ZoneDTO> findAll() {
+        // Récupérer toutes les zones avec leur marché
+        List<Zone> zones = zoneRepository.findAllWithMarchee();
+
+        // Mapper chaque zone en DTO avec tous les calculs
+        return zones.stream()
+                .map(this::mapZoneToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Mappe une Zone en ZoneDTO avec tous les calculs métier
+     */
+    private ZoneDTO mapZoneToDTO(Zone zone) {
+        // Calcul du nombre de halls
+        int nbrHall = calculateNombreHalls(zone);
+
+        // Récupération de toutes les places (zone + halls)
+        List<Place> toutesLesPlaces = getAllPlaces(zone);
+
+        // Calculs des places
+        int nbrPlaceTotal = toutesLesPlaces.size();
+        int nbrPlaceLibre = calculatePlacesLibres(toutesLesPlaces);
+        int nbrPlaceOccupee = calculatePlacesOccupees(toutesLesPlaces);
+
+        // Mapping via le mapper
+        return zoneMapper.toDTO(
+                zone,
+                nbrHall,
+                nbrPlaceTotal,
+                nbrPlaceLibre,
+                nbrPlaceOccupee
+        );
+    }
+
+    /**
+     * Calcule le nombre de halls d'une zone
+     */
+    private int calculateNombreHalls(Zone zone) {
+        return zone.getHalls() != null ? zone.getHalls().size() : 0;
+    }
+
+    /**
+     * Récupère toutes les places d'une zone (directes + dans les halls)
+     */
+    private List<Place> getAllPlaces(Zone zone) {
+        List<Place> toutesLesPlaces = new ArrayList<>();
+
+        // Ajouter les places directes de la zone
+        if (zone.getPlaces() != null) {
+            toutesLesPlaces.addAll(zone.getPlaces());
+        }
+
+        // Ajouter les places des halls
+        if (zone.getHalls() != null) {
+            for (Halls hall : zone.getHalls()) {
+                if (hall.getPlaces() != null) {
+                    toutesLesPlaces.addAll(hall.getPlaces());
+                }
+            }
+        }
+
+        return toutesLesPlaces;
+    }
+
+    /**
+     * Calcule le nombre de places libres
+     */
+    private int calculatePlacesLibres(List<Place> places) {
+        return (int) places.stream()
+                .filter(place -> !place.getIsOccuped())
+                .count();
+    }
+
+    /**
+     * Calcule le nombre de places occupées
+     */
+    private int calculatePlacesOccupees(List<Place> places) {
+        return (int) places.stream()
+                .filter(Place::getIsOccuped)
+                .count();
+    }
+
+//    @Transactional
+//    public ZoneDTO create(Zone zone) {
+//        Zone savedZone = zoneRepository.save(zone);
+//        return zoneMapper.toDTO(savedZone);
+//    }
+
+//    @Transactional
+//    public ZoneDTO update(Long id, Zone zoneDetails) {
+//        Zone zone = zoneRepository.findById(Math.toIntExact(id))
+//                .orElseThrow(() -> new RuntimeException("Zone non trouvée avec l'id: " + id));
+//
+//        zone.setNom(zoneDetails.getNom());
+//        zone.setDescription(zoneDetails.getDescription());
+//
+//        Zone updatedZone = zoneRepository.save(zone);
+//        return zoneMapper.toDTO(updatedZone);
+//    }
+
+    @Transactional
+    public void delete(Long id) {
+        if (!zoneRepository.existsById(Math.toIntExact(id))) {
+            throw new RuntimeException("Zone non trouvée avec l'id: " + id);
+        }
+        zoneRepository.deleteById(Math.toIntExact(id));
     }
 
     public Optional<Zone> findById(Integer id) {

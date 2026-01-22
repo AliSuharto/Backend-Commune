@@ -1,8 +1,10 @@
 package Commune.Dev.Controller;
 import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.Session;
+import Commune.Dev.Models.User;
 import Commune.Dev.Request.ValidateSessionRequest;
 import Commune.Dev.Services.JwtManualService;
+import Commune.Dev.Services.RegisseurDashboardService;
 import Commune.Dev.Services.SessionService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +24,7 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final JwtManualService jwtManualService;
+    private final RegisseurDashboardService regisseurDashboardService;
 
     // Créer une nouvelle session
     @PostMapping
@@ -160,4 +164,28 @@ public class SessionController {
             @RequestParam String motif) {
         return ResponseEntity.ok(sessionService.rejectSession(id, motif));
     }
+
+    @GetMapping("/dashboard/{userId}")
+    public ResponseEntity<RegisseurDashboardDTO> getDashboardByUserId(@PathVariable Integer userId) {
+        // Endpoint pour les admins qui veulent voir le dashboard d'un régisseur spécifique
+        RegisseurDashboardDTO dashboard = regisseurDashboardService.getDashboardData(userId);
+        return ResponseEntity.ok(dashboard);
+    }
+
+    private Integer getUserIdFromAuthentication(Authentication authentication) {
+        // Cette méthode dépend de votre implémentation de sécurité
+        // Adaptez selon votre UserDetails ou principal
+        if (authentication != null && authentication.getPrincipal() instanceof org.springframework.security.core.userdetails.UserDetails) {
+            // Si vous avez une classe UserDetails personnalisée avec getId()
+            return Math.toIntExact(((User) authentication.getPrincipal()).getId());
+        }
+        throw new RuntimeException("Utilisateur non authentifié");
+    }
+
+
+
+
+
+
+
 }

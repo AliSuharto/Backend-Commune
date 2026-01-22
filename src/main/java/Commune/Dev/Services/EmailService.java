@@ -1,12 +1,15 @@
 package Commune.Dev.Services;
 
 import Commune.Dev.Models.Roletype;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -214,4 +217,118 @@ public class EmailService {
             case REGISSEUR_PRINCIPAL -> "Régisseur Principal - Coordination des régisseurs";
         };
     }
+    @Async
+    public void sendAccountStatusChangeNotification(
+            String email,
+            String nom,
+            String prenom,
+            boolean isActivated,
+            String changedByRole,
+            String motif
+    ) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(email);
+
+            String subject = isActivated
+                    ? "Votre compte a été réactivé"
+                    : "Votre compte a été désactivé";
+            helper.setSubject(subject);
+
+            String statusColor = isActivated ? "#28a745" : "#dc3545";
+            String statusText = isActivated ? "ACTIVÉ" : "DÉSACTIVÉ";
+            String actionText = isActivated
+                    ? "Vous pouvez maintenant vous connecter à votre compte."
+                    : "Vous ne pouvez plus accéder à votre compte pour le moment.";
+
+            String htmlContent = "<!DOCTYPE html>" +
+                    "<html lang='fr'>" +
+                    "<head>" +
+                    "    <meta charset='UTF-8'>" +
+                    "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>" +
+                    "    <title>" + subject + "</title>" +
+                    "</head>" +
+                    "<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>" +
+                    "    <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;'>" +
+                    "        <h1 style='color: white; margin: 0; font-size: 28px;'>Changement de Statut</h1>" +
+                    "    </div>" +
+                    "    <div style='background-color: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>" +
+                    "        <p style='font-size: 16px; margin-bottom: 20px;'>Bonjour <strong>" + prenom + " " + nom + "</strong>,</p>" +
+                    "        " +
+                    "        <div style='background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid " + statusColor + ";'>" +
+                    "            <p style='margin: 0 0 15px 0; font-size: 16px;'>" +
+                    "                <strong>Statut du compte :</strong> " +
+                    "                <span style='color: " + statusColor + "; font-weight: bold; font-size: 18px;'>" + statusText + "</span>" +
+                    "            </p>" +
+                    "            <p style='margin: 0; font-size: 14px; color: #666;'>" +
+                    "                <strong>Motif :</strong> " + motif +
+                    "            </p>" +
+                    "        </div>" +
+                    "        " +
+                    "        <p style='font-size: 15px; margin: 20px 0;'>" + actionText + "</p>" +
+                    "        " +
+                    (isActivated ?
+                            "        <div style='text-align: center; margin: 30px 0;'>" +
+                                    "            <a href='http://localhost:4200/login' style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;'>Se connecter</a>" +
+                                    "        </div>"
+                            : "") +
+                    "        " +
+                    "        <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;'>" +
+                    "            <p style='font-size: 13px; color: #666; margin: 5px 0;'>Si vous avez des questions, veuillez contacter votre administrateur.</p>" +
+                    "        </div>" +
+                    "    </div>" +
+                    "    " +
+                    "    <div style='text-align: center; margin-top: 20px; color: #888; font-size: 12px;'>" +
+                    "        <p>© 2025 Système de Gestion Communale. Tous droits réservés.</p>" +
+                    "    </div>" +
+                    "</body>" +
+                    "</html>";
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+
+            log.info("Email de changement de statut ({}) envoyé à : {}", statusText, email);
+        } catch (MessagingException e) {
+            log.error("Erreur lors de l'envoi de l'email de changement de statut à : {}", email, e);
+            throw new RuntimeException("Erreur lors de l'envoi de l'email", e);
+        }
+    }
+
+// Ajoutez cette méthode à votre EmailService existant
+//    @Async
+//    public void sendTemporaryPassword(String email, String nom, String prenom, String temporaryPassword) {
+//        String subject = "Réinitialisation de votre mot de passe";
+//
+//        String body = String.format("""
+//        Bonjour %s %s,
+//
+//        Vous avez demandé la réinitialisation de votre mot de passe.
+//
+//        Voici votre mot de passe temporaire : %s
+//
+//        Pour des raisons de sécurité, vous devrez changer ce mot de passe lors de votre prochaine connexion.
+//
+//        Si vous n'avez pas fait cette demande, veuillez contacter l'administrateur immédiatement.
+//
+//        Cordialement,
+//        L'équipe Commune
+//        """,
+//                prenom,
+//                nom,
+//                temporaryPassword
+//        );
+//
+//        try {
+//            sendEmail(email, subject, body);
+//            log.info("Email de mot de passe temporaire envoyé à : {}", email);
+//        } catch (Exception e) {
+//            log.error("Erreur lors de l'envoi de l'email de mot de passe temporaire à : {}", email, e);
+//            throw new RuntimeException("Erreur lors de l'envoi de l'email");
+//        }
+//    }
+
+
 }

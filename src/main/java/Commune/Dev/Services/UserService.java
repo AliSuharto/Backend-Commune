@@ -390,10 +390,10 @@ public class UserService {
         response.setNom(user.getNom());
         response.setPrenom(user.getPrenom());
         response.setPseudo(user.getPseudo());
-//        response.setPhotoUrl(user.getPhotoUrl());
+
         response.setRole(user.getRole());
         response.setIsActive(user.getIsActive());
-//        response.setMustChangePassword(user.getMustChangePassword());
+
         response.setTelephone(user.getTelephone());
         response.setCreatedByName(user.getCreatedBy() != null ?
                 user.getCreatedBy().getNom() + " " + user.getCreatedBy().getPrenom() : null);
@@ -407,6 +407,135 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
     }
+
+    // Ajoutez ces méthodes dans votre UserService
+
+    @Transactional
+    public UserResponse disableUser(Long userId, User disabledBy) {
+        // Vérifier les permissions
+        if (disabledBy.getRole() != Roletype.DIRECTEUR && disabledBy.getRole() != Roletype.ORDONNATEUR) {
+            throw new UnauthorizedException("Seul le DIRECTEUR ou l'ORDONNATEUR peut désactiver un utilisateur");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé"));
+
+        // Vérifier si l'utilisateur est déjà désactivé
+        if (!user.getIsActive()) {
+            throw new BusinessException("Cet utilisateur est déjà désactivé");
+        }
+
+        // Désactiver l'utilisateur
+        user.setIsActive(false);
+        user.setUpdatedAt(LocalDateTime.now());
+        User savedUser = userRepository.save(user);
+
+        // Logger l'action
+        auditService.logAction(
+                user,
+                AuditAction.DISABLE_ACCOUNT,
+                "isActive",
+                "true",
+                "false",
+                disabledBy,
+                "Compte désactivé par " + disabledBy.getRole()
+        );
+
+        // Déterminer qui a désactivé le compte
+        String disabledByRole = disabledBy.getRole() == Roletype.DIRECTEUR ? "le Directeur" : "l'Ordonnateur";
+        String motif = "Votre compte a été désactivé par " + disabledByRole + ".";
+
+        // Créer une notification
+        notificationService.createNotification(
+                user,
+                "Compte désactivé",
+                motif,
+                NotificationType.ACCOUNT_DISABLED,
+                disabledBy
+        );
+
+        // Envoyer l'email de notification
+        emailService.sendAccountStatusChangeNotification(
+                user.getEmail(),
+                user.getNom(),
+                user.getPrenom(),
+                false, // statut désactivé
+                disabledByRole,
+                motif
+        );
+
+        log.info("Utilisateur {} désactivé par {} ({})", user.getEmail(), disabledBy.getEmail(), disabledBy.getRole());
+
+        return convertToUserResponse(savedUser);
+    }
+
+    @Transactional
+    public UserResponse enableUser(Long userId, User enabledBy) {
+        // Vérifier les permissions
+        if (enabledBy.getRole() != Roletype.DIRECTEUR && enabledBy.getRole() != Roletype.ORDONNATEUR) {
+            throw new UnauthorizedException("Seul le DIRECTEUR ou l'ORDONNATEUR peut activer un utilisateur");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé"));
+
+        // Vérifier si l'utilisateur est déjà activé
+        if (user.getIsActive()) {
+            throw new BusinessException("Cet utilisateur est déjà activé");
+        }
+
+        // Activer l'utilisateur
+        user.setIsActive(true);
+        user.setUpdatedAt(LocalDateTime.now());
+        User savedUser = userRepository.save(user);
+
+        // Logger l'action
+        auditService.logAction(
+                user,
+                AuditAction.ENABLE_ACCOUNT,
+                "isActive",
+                "false",
+                "true",
+                enabledBy,
+                "Compte activé par " + enabledBy.getRole()
+        );
+
+        // Déterminer qui a activé le compte
+        String enabledByRole = enabledBy.getRole() == Roletype.DIRECTEUR ? "le Directeur" : "l'Ordonnateur";
+        String motif = "Votre compte a été réactivé par " + enabledByRole + ". Vous pouvez maintenant vous connecter.";
+
+        // Créer une notification
+        notificationService.createNotification(
+                user,
+                "Compte réactivé",
+                motif,
+                NotificationType.ACCOUNT_CREATED, // ou créer un nouveau type ACCOUNT_ENABLED
+                enabledBy
+        );
+
+        // Envoyer l'email de notification
+        emailService.sendAccountStatusChangeNotification(
+                user.getEmail(),
+                user.getNom(),
+                user.getPrenom(),
+                true, // statut activé
+                enabledByRole,
+                motif
+        );
+
+        log.info("Utilisateur {} réactivé par {} ({})", user.getEmail(), enabledBy.getEmail(), enabledBy.getRole());
+
+        return convertToUserResponse(savedUser);
+    }
+
+
+
+
+
+
+
+
+
 
 }
 

@@ -7,7 +7,6 @@ import lombok.Data;
 public class ChangePasswordRequest {
     @NotBlank(message = "L'ancien mot de passe est obligatoire")
     private String oldPassword;
-
     @NotBlank(message = "Le nouveau mot de passe est obligatoire")
     private String newPassword;
 }

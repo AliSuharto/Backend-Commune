@@ -15,6 +15,8 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
     Optional<Place> findByNomAndHallId(String nom, Integer hallId);
     Optional<Place> findByNomAndZoneId(String nom, Integer zoneId);
     Optional<Place> findByNomAndMarcheeId(String nom, Integer marcheeId);
+    @Query("SELECT COUNT(p) FROM Place p")
+    Integer countAllPlaces();
 
     List<Place> findByMarcheeId(Long marcheeId);
     List<Place> findByHallId(Long hallId);
