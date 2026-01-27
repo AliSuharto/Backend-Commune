@@ -2,15 +2,15 @@ package Commune.Dev.Services;
 
 import Commune.Dev.Dtos.PlaceParentInfo;
 import Commune.Dev.Models.*;
-import Commune.Dev.Repositories.HallsRepository;
-import Commune.Dev.Repositories.MarcheeRepository;
-import Commune.Dev.Repositories.PlaceRepository;
-import Commune.Dev.Repositories.ZoneRepository;
+import Commune.Dev.Repositories.*;
 import Commune.Dev.Request.PlaceRequest;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,6 +26,8 @@ public class PlaceService {
     private PlaceRepository placeRepository;
     @Autowired
     private MarcheeRepository marcheeRepository;
+    @Autowired
+    private ContratRepository contratRepository;
 
     // CREATE operations
     public Place save(Place place) {
@@ -253,6 +255,37 @@ public class PlaceService {
         return placeRepository.countByZoneIdAndIsOccuped(zoneId, false);
     }
 
+
+
+    @Transactional
+    public Place libererPlace(Integer placeId) {
+
+        Place place = placeRepository.findById(placeId)
+                .orElseThrow(() -> new IllegalArgumentException("Place non trouvée"));
+
+        if (!place.getIsOccuped()) {
+            throw new IllegalStateException("Cette place n'est pas occupée");
+        }
+
+        // Récupérer le contrat actif lié à cette place
+        Optional<Contrat> contratActif = contratRepository.findContratByPlace(placeId);
+
+        if (contratActif.isPresent()) {
+            Contrat contrat = contratActif.get();
+
+            // Désactiver le contrat
+            contrat.setIsActif(false);
+            contrat.setDateOfEnd(LocalDate.now().atStartOfDay());
+            contratRepository.save(contrat);
+        }
+
+        // Libérer la place
+        place.setIsOccuped(false);
+        place.setDateFinOccupation(LocalDateTime.now());
+        place.setCategorie(null); // Optionnel : réinitialiser la catégorie
+
+        return placeRepository.save(place);
+    }
 
 
 }

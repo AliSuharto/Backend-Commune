@@ -23,6 +23,8 @@ public class PaiementDTO {
     private String modePaiement;
     private String moisdePaiement;
     private String nomMarchands;
+    private String ActiviteMarchands;
+    private String nomPlaceComplet;
     private Integer idMarchand;
     private Integer idAgent;
     private String nomAgent;

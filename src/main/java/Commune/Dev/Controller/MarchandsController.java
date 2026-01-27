@@ -1,9 +1,6 @@
 package Commune.Dev.Controller;
 
-import Commune.Dev.Dtos.ImportResult;
-import Commune.Dev.Dtos.MarchandDTO;
-import Commune.Dev.Dtos.MarchandDetailsDTO;
-import Commune.Dev.Dtos.MarchandsPaiementDTO;
+import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.Marchands;
 import Commune.Dev.Request.CreateMarchandRequest;
 import Commune.Dev.Services.ContratService;
@@ -61,56 +58,6 @@ public class MarchandsController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
-
-
-
-    // Obtenir les marchands avec places
-//    @GetMapping("/with-places")
-//    public ResponseEntity<List<Marchands>> getMarchandsWithPlaces() {
-//        try {
-//            List<Marchands> marchands = marchandsService.getMarchandsWithPlaces();
-//            return ResponseEntity.ok(marchands);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
-//    }
-
-    // Rechercher un marchand par ID
-//    @GetMapping("/{id}")
-//    public ResponseEntity<Marchands> getMarchandById(@PathVariable Integer id) {
-//        try {
-//            Optional<Marchands> marchand = marchandsService.getMarchandById(id);
-//            return marchand.map(ResponseEntity::ok)
-//                    .orElse(ResponseEntity.notFound().build());
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
-//    }
-
-    // Rechercher des marchands par nom/prénom
-//    @GetMapping("/search")
-//    public ResponseEntity<List<Marchands>> searchMarchands(@RequestParam String q) {
-//        try {
-//            if (q == null || q.trim().isEmpty()) {
-//                return ResponseEntity.badRequest().build();
-//            }
-//            List<Marchands> marchands = marchandsService.searchMarchands(q.trim());
-//            return ResponseEntity.ok(marchands);
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
-//    }
-
-    // Rechercher par numéro CIN
-//    @GetMapping("/cin/{numCIN}")
-//    public ResponseEntity<Marchands> getMarchandByNumCIN(@PathVariable String numCIN) {
-//        try {
-//            Marchands marchand = marchandsService.getMarchandByNumCIN(numCIN);
-//            return marchand != null ? ResponseEntity.ok(marchand) : ResponseEntity.notFound().build();
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-//        }
-//    }
 
     // Créer un nouveau marchand avec photo optionnelle
     @PostMapping(
@@ -206,28 +153,29 @@ public class MarchandsController {
         }
     }
 
+//UPDATE MARCHANDS
 
-    // Mettre à jour un marchand
-    @PutMapping(value = "/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PutMapping(value = "/{id}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> updateMarchand(
             @PathVariable Integer id,
-            @RequestParam("nom") String nom,
-            @RequestParam("prenom") String prenom,
-            @RequestParam("numCIN") String numCIN,
-            @RequestParam(value = "numTel1", required = false) String numTel1,
-            @RequestParam(value = "numTel2", required = false) String numTel2,
-            @RequestParam(value = "photo", required = false) MultipartFile photo) {
+            @RequestBody MarchandsUpdateDTO updateDTO) {
 
         try {
             // Créer l'objet avec les nouvelles données
             Marchands marchandDetails = new Marchands();
-            marchandDetails.setNom(nom);
-//            marchandDetails.setPrenom(prenom);
-            marchandDetails.setNumCIN(numCIN);
-            marchandDetails.setNumTel1(numTel1);
-            marchandDetails.setNumTel2(numTel2);
+            marchandDetails.setNom(updateDTO.getNom());
+            marchandDetails.setPrenom(updateDTO.getPrenom());
+            marchandDetails.setActivite(updateDTO.getActivite());
+            marchandDetails.setNIF(updateDTO.getNif());
+            marchandDetails.setSTAT(updateDTO.getStat());
+            marchandDetails.setAdress(updateDTO.getAdress());
+            marchandDetails.setNumCIN(updateDTO.getNumCIN());
+            marchandDetails.setNumTel1(updateDTO.getNumTel1());
+            marchandDetails.setNumTel2(updateDTO.getNumTel2());
 
-            Marchands updatedMarchand = marchandsService.updateMarchand(id, marchandDetails, photo);
+            Marchands updatedMarchand = marchandsService.updateMarchand(id, marchandDetails, null);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
@@ -249,7 +197,6 @@ public class MarchandsController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
-
     // Supprimer un marchand
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteMarchand(@PathVariable Integer id) {

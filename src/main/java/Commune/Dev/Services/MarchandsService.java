@@ -577,12 +577,15 @@ public class MarchandsService {
         }
 
         existing.setNom(marchandDetails.getNom());
-
+        existing.setSTAT(marchandDetails.getSTAT());
+        existing.setNIF(marchandDetails.getNIF());
+        existing.setActivite(marchandDetails.getActivite());
         existing.setNumCIN(marchandDetails.getNumCIN());
         existing.setNumTel1(marchandDetails.getNumTel1());
         existing.setNumTel2(marchandDetails.getNumTel2());
         existing.setAdress(marchandDetails.getAdress());
         existing.setDescription(marchandDetails.getDescription());
+
 
         if (newPhoto != null && !newPhoto.isEmpty()) {
             String oldPhoto = existing.getPhoto();

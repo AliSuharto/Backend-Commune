@@ -27,11 +27,11 @@ public interface ContratRepository extends JpaRepository<Contrat, Integer> {
     List<Contrat> findByCategorieId(Integer categorieId);
 
     // Vérifier si un marchand a déjà un contrat actif
-    @Query("SELECT c FROM Contrat c WHERE c.idMarchand = :idMarchand")
+    @Query("SELECT c FROM Contrat c WHERE c.idMarchand = :idMarchand AND c.isActif= true")
     List<Contrat> findContratsByMarchand(@Param("idMarchand") Integer idMarchand);
 
     // Vérifier si une place a déjà un contrat actif
-    @Query("SELECT c FROM Contrat c WHERE c.idPlace = :idPlace")
+    @Query("SELECT c FROM Contrat c WHERE c.idPlace = :idPlace AND c.isActif = true")
     Optional<Contrat> findContratByPlace(@Param("idPlace") Integer idPlace);
 
     // Récupérer tous les contrats avec leurs relations
@@ -56,8 +56,7 @@ public interface ContratRepository extends JpaRepository<Contrat, Integer> {
     """)
     List<Contrat> findContratsActifsAvecTout();
 
-
-
+    // Ou plus précis :
 
 
 }

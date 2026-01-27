@@ -1,6 +1,7 @@
 package Commune.Dev.Controller;
 
 import Commune.Dev.Dtos.*;
+import Commune.Dev.Exception.UserNotFoundException;
 import Commune.Dev.Models.User;
 import Commune.Dev.Models.UserAudit;
 import Commune.Dev.Services.AuditService;
@@ -55,8 +56,8 @@ public class UserController {
     }
 
     @GetMapping("/regisseurs-percepteurs")
-    public ResponseEntity<List<UserResponse>> getRegisseursAndPercepteurs() {
-        List<UserResponse> users = userService.getRegisseurAndPercepteur();
+    public ResponseEntity<List<UserResponseRegisseur>> getRegisseursAndPercepteurs() {
+        List<UserResponseRegisseur> users = userService.getRegisseurAndPercepteur();
         return ResponseEntity.ok(users);
     }
 
@@ -67,6 +68,44 @@ public class UserController {
         UserResponse user = userService.getUserById(id);
         return ResponseEntity.ok(ApiResponse.success(user));
     }
+
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(
+            @AuthenticationPrincipal User currentUser) {
+
+        try {
+            UserResponse userResponse = userService.getCurrentUser(currentUser.getId());
+
+            return ResponseEntity.ok(ApiResponse.success(
+                    "Utilisateur récupéré avec succès",
+                    userResponse
+            ));
+
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<UserResponse>> updateCurrentUser(
+            @Valid @RequestBody UpdateUserRequest request,
+            @AuthenticationPrincipal User currentUser) {
+
+        UserResponse userResponse = userService.updateCurrentUser(
+                currentUser.getId(),
+                request,
+                currentUser
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Profil mis à jour avec succès",
+                userResponse
+        ));
+    }
+
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('DIRECTEUR')")
@@ -138,8 +177,6 @@ public class UserController {
         UserResponse response = userService.enableUser(userId, currentUser);
         return ResponseEntity.ok(response);
     }
-
-
 
 
 

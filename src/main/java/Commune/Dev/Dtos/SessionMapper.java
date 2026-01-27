@@ -1,7 +1,6 @@
 package Commune.Dev.Dtos;
 
-import Commune.Dev.Models.Paiement;
-import Commune.Dev.Models.Session;
+import Commune.Dev.Models.*;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -83,6 +82,8 @@ public class SessionMapper {
             dto.setNomMarchands(paiement.getMarchand().getNom());
             dto.setIdMarchand(paiement.getMarchand().getId() != null
                     ? paiement.getMarchand().getId().intValue() : null);
+            dto.setActiviteMarchands(paiement.getMarchand().getActivite() !=null
+                     ?paiement.getMarchand().getActivite().toString():null);
         }
 
         if (paiement.getAgent() != null) {
@@ -92,9 +93,49 @@ public class SessionMapper {
         }
 
         if (paiement.getPlace() != null) {
-            dto.setNomPlace(paiement.getPlace().getNom());
-            dto.setIdPlace(paiement.getPlace().getId() != null
-                    ? paiement.getPlace().getId().intValue() : null);
+            Place place = paiement.getPlace();
+            dto.setNomPlace(place.getNom());
+            dto.setIdPlace(place.getId() != null ? place.getId().intValue() : null);
+
+            // Construction du nom complet selon la hiérarchie
+            StringBuilder nomComplet = new StringBuilder(place.getNom());
+
+            Halls hall = place.getHall();
+            Zone zone = null;
+            Marchee marchee = null;
+
+            if (hall != null) {
+                // La place est dans un hall
+                nomComplet.append(" / ").append(hall.getNom());
+
+                // Vérifier si le hall est dans une zone
+                zone = hall.getZone();
+                if (zone != null) {
+                    nomComplet.append(" / ").append(zone.getNom());
+                    // Si zone existe, récupérer son marché
+                    marchee = zone.getMarchee();
+                } else {
+                    // Le hall est directement dans un marché
+                    marchee = hall.getMarchee();
+                }
+            } else {
+                // La place est directement dans une zone ou un marché
+                zone = place.getZone();
+                if (zone != null) {
+                    nomComplet.append(" / ").append(zone.getNom());
+                    marchee = zone.getMarchee();
+                } else {
+                    // La place est directement dans un marché
+                    marchee = place.getMarchee();
+                }
+            }
+
+            // Ajouter le marché à la fin si il existe
+            if (marchee != null) {
+                nomComplet.append(" / ").append(marchee.getNom());
+            }
+
+            dto.setNomPlaceComplet(nomComplet.toString());
         }
 
         if (paiement.getSession() != null) {
@@ -105,6 +146,8 @@ public class SessionMapper {
         if (paiement.getQuittance() != null) {
             dto.setQuittanceId(paiement.getQuittance().getId() != null
                     ? paiement.getQuittance().getId().intValue() : null);
+            dto.setRecuNumero(paiement.getQuittance().getNom()!=null
+            ?paiement.getQuittance().getNom().toString():null);
         }
 
         return dto;

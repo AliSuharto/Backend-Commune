@@ -1,9 +1,6 @@
 package Commune.Dev.Services;
 
-import Commune.Dev.Dtos.CreateOrdonnateurRequest;
-import Commune.Dev.Dtos.CreateUserRequest;
-import Commune.Dev.Dtos.UpdateUserRequest;
-import Commune.Dev.Dtos.UserResponse;
+import Commune.Dev.Dtos.*;
 import Commune.Dev.Exception.BusinessException;
 import Commune.Dev.Exception.UnauthorizedException;
 import Commune.Dev.Exception.UserAlreadyExistsException;
@@ -340,7 +337,7 @@ public class UserService {
     }
 
 
-    public List<UserResponse> getRegisseurAndPercepteur() {
+    public List<UserResponseRegisseur> getRegisseurAndPercepteur() {
 
         List<Roletype> roles = Arrays.asList(
                 Roletype.REGISSEUR,
@@ -349,7 +346,7 @@ public class UserService {
 
         return userRepository.findByRoleIn(roles)
                 .stream()
-                .map(this::convertToUserResponse)
+                .map(this::convertToUserResponseRegisseur)
                 .collect(Collectors.toList());
     }
 
@@ -357,6 +354,55 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé"));
         return convertToUserResponse(user);
+    }
+
+    public UserResponse getCurrentUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé"));
+
+        return convertToUserResponse(user);
+    }
+
+
+    public UserResponse updateCurrentUser(Long userId, UpdateUserRequest request, User currentUser) {
+        // Vérifier que l'utilisateur ne peut modifier que son propre profil
+        if (!userId.equals(currentUser.getId())) {
+            throw new UnauthorizedException("Vous ne pouvez modifier que votre propre profil");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé"));
+
+        // Mettre à jour les champs autorisés pour l'utilisateur lui-même
+        if (request.getNom() != null) {
+            user.setNom(request.getNom());
+        }
+        if (request.getPrenom() != null) {
+            user.setPrenom(request.getPrenom());
+        }
+//        if (request.getPseudo() != null) {
+//            user.setPseudo(request.getPseudo());
+//        }
+        if (request.getTelephone() != null) {
+            user.setTelephone(request.getTelephone());
+        }
+        if (request.getEmail() != null) {
+            // Vérifier que l'email n'est pas déjà utilisé
+            if (!user.getEmail().equals(request.getEmail())) {
+                userRepository.findByEmail(request.getEmail()).ifPresent(existingUser -> {
+                    throw new UserAlreadyExistsException("Cet email est déjà utilisé");
+                });
+                user.setEmail(request.getEmail());
+            }
+        }
+
+        // Note: L'utilisateur ne peut pas changer son propre rôle
+
+        user.setUpdatedAt(LocalDateTime.now());
+//        user.setUpdateBy(currentUser.getId());
+
+        User updatedUser = userRepository.save(user);
+        return convertToUserResponse(updatedUser);
     }
 
     public User findByEmail(String email) {
@@ -402,6 +448,67 @@ public class UserService {
 
         return response;
     }
+
+    private UserResponseRegisseur convertToUserResponseRegisseur(User user) {
+        UserResponseRegisseur response = new UserResponseRegisseur();
+
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
+        response.setNom(user.getNom());
+        response.setPrenom(user.getPrenom());
+        response.setRole(user.getRole());
+        response.setIsActive(user.getIsActive());
+        response.setTelephone(user.getTelephone());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+
+        // Récupérer le nom du créateur si existe
+        if (user.getCreatedBy() != null) {
+            response.setCreatedByName(user.getCreatedBy().getNom() + " " + user.getCreatedBy().getPrenom());
+        }
+
+        // Convertir les marchés
+        if (user.getMarchees() != null) {
+            List<UserResponseRegisseur.MarcheeR> marchees = user.getMarchees().stream()
+                    .map(marchee -> {
+                        UserResponseRegisseur.MarcheeR marcheeR = response.new MarcheeR();
+                        marcheeR.setId(marchee.getId());
+                        marcheeR.setNom(marchee.getNom());
+                        return marcheeR;
+                    })
+                    .collect(Collectors.toList());
+            response.setMarchee(marchees);
+        }
+
+        // Convertir les halls
+        if (user.getHalls() != null) {
+            List<UserResponseRegisseur.HallR> halls = user.getHalls().stream()
+                    .map(hall -> {
+                        UserResponseRegisseur.HallR hallR = response.new HallR();
+                        hallR.setId(hall.getId());
+                        hallR.setNom(hall.getNom());
+                        return hallR;
+                    })
+                    .collect(Collectors.toList());
+            response.setHalls(halls);
+        }
+
+        // Convertir les zones
+        if (user.getZones() != null) {
+            List<UserResponseRegisseur.ZoneR> zones = user.getZones().stream()
+                    .map(zone -> {
+                        UserResponseRegisseur.ZoneR zoneR = response.new ZoneR();
+                        zoneR.setId(zone.getId());
+                        zoneR.setNom(zone.getNom());
+                        return zoneR;
+                    })
+                    .collect(Collectors.toList());
+            response.setZones(zones);
+        }
+
+        return response;
+    }
+
 
     public User findById(Long id) {
         return userRepository.findById(id)

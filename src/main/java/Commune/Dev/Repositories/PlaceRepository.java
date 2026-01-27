@@ -18,6 +18,8 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
     @Query("SELECT COUNT(p) FROM Place p")
     Integer countAllPlaces();
 
+
+
     List<Place> findByMarcheeId(Long marcheeId);
     List<Place> findByHallId(Long hallId);
     List<Place> findByZoneId(Long zoneId);
