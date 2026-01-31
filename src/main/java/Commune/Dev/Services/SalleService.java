@@ -16,6 +16,7 @@ public interface SalleService {
     // Advanced operations
     Page<SalleResponseDTO> findAllWithFilters(SalleFilterDTO filterDTO);
     List<SalleResponseDTO> findAll();
+    List<SalleResponseDTO> findAlls();
     List<SalleResponseDTO> findAllByMarchee(Integer marcheeId); // Toutes les salles du marché
     List<SalleResponseDTO> findDirectlyByMarchee(Integer marcheeId); // Salles directement dans le marché
     List<SalleResponseDTO> findByZone(Integer zoneId);

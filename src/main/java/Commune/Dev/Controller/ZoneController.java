@@ -1,6 +1,7 @@
 package Commune.Dev.Controller;
 
 import Commune.Dev.Dtos.ZoneDTO;
+import Commune.Dev.Dtos.ZoneDTOnomComplet;
 import Commune.Dev.Dtos.ZoneResponse;
 import Commune.Dev.Models.Zone;
 import Commune.Dev.Request.ZoneRequest;
@@ -56,7 +57,20 @@ public class ZoneController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
-//
+    @GetMapping("/ok")
+    public ResponseEntity<List<ZoneDTOnomComplet>> getAllZoneNomComplet() {
+        try {
+            List<ZoneDTOnomComplet> zones = zoneService.findAllNomComplet();
+            return ResponseEntity.ok(zones);
+        } catch (Exception e) {
+            // Log l'erreur pour le debug
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+
+
 //    @GetMapping("/{id}")
 //    public ResponseEntity<ZoneDTO> getZoneById(@PathVariable Integer id) {
 //        try {

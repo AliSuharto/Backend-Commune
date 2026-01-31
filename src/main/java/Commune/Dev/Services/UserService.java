@@ -350,6 +350,22 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public List<UserResponsePercepteur> getPercepteur() {
+
+        List<Roletype> roles = Arrays.asList(
+                Roletype.REGISSEUR,
+                Roletype.PERCEPTEUR
+        );
+
+        return userRepository.findByRoleIn(roles)
+                .stream()
+                .map(this::convertToUserResponsePercepteur)
+                .collect(Collectors.toList());
+    }
+
+
+
+
     public UserResponse getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("Utilisateur non trouvé"));
@@ -508,6 +524,95 @@ public class UserService {
 
         return response;
     }
+
+    private UserResponsePercepteur convertToUserResponsePercepteur(User user) {
+        UserResponsePercepteur response = new UserResponsePercepteur();
+
+        response.setId(user.getId());
+        response.setEmail(user.getEmail());
+        response.setNom(user.getNom());
+        response.setPrenom(user.getPrenom());
+        response.setRole(user.getRole());
+        response.setIsActive(user.getIsActive());
+        response.setTelephone(user.getTelephone());
+        response.setCreatedAt(user.getCreatedAt());
+        response.setUpdatedAt(user.getUpdatedAt());
+
+        // Récupérer le nom du créateur si existe
+        if (user.getCreatedBy() != null) {
+            response.setCreatedByName(user.getCreatedBy().getNom() + " " + user.getCreatedBy().getPrenom());
+        }
+
+        // Convertir les marchés
+        if (user.getMarchees() != null) {
+            List<UserResponsePercepteur.MarcheeR> marchees = user.getMarchees().stream()
+                    .map(marchee -> {
+                        UserResponsePercepteur.MarcheeR marcheeR = response.new MarcheeR();
+                        marcheeR.setId(marchee.getId());
+                        marcheeR.setNom(marchee.getNom());
+                        return marcheeR;
+                    })
+                    .collect(Collectors.toList());
+            response.setMarchee(marchees);
+        }
+
+        // Convertir les halls avec leur contexte (marché ou zone)
+        if (user.getHalls() != null) {
+            List<UserResponsePercepteur.HallR> halls = user.getHalls().stream()
+                    .map(hall -> {
+                        UserResponsePercepteur.HallR hallR = response.new HallR();
+                        hallR.setId(hall.getId());
+
+                        // Construire le nom avec le contexte
+                        String nomComplet = hall.getNom();
+                        if (hall.getZone() != null) {
+                            // Hall dans une zone
+                            nomComplet += " (zone " + hall.getZone().getNom() +
+                                    " du marché " + hall.getZone().getMarchee().getNom() + ")";
+                        } else if (hall.getMarchee() != null) {
+                            // Hall directement dans un marché
+                            nomComplet += " (marché " + hall.getMarchee().getNom() + ")";
+                        }
+
+                        hallR.setNom(nomComplet);
+                        return hallR;
+                    })
+                    .collect(Collectors.toList());
+            response.setHalls(halls);
+        }
+
+        // Convertir les zones avec leur marché
+        if (user.getZones() != null) {
+            List<UserResponsePercepteur.ZoneR> zones = user.getZones().stream()
+                    .map(zone -> {
+                        UserResponsePercepteur.ZoneR zoneR = response.new ZoneR();
+                        zoneR.setId(zone.getId());
+
+                        // Construire le nom avec le marché
+                        String nomComplet = zone.getNom();
+                        if (zone.getMarchee() != null) {
+                            nomComplet += " (marché " + zone.getMarchee().getNom() + ")";
+                        }
+
+                        zoneR.setNom(nomComplet);
+                        return zoneR;
+                    })
+                    .collect(Collectors.toList());
+            response.setZones(zones);
+        }
+
+        return response;
+    }
+
+
+
+
+
+
+
+
+
+
 
 
     public User findById(Long id) {

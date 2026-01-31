@@ -284,7 +284,8 @@ public class PaiementService {
 
             paiement.setMotif(request.getMotif());
             paiement.setMoisdePaiement(request.getMoisdePaiement());
-            paiement.setTypePaiement(request.getTypePaiement());
+            paiement.setTypePaiement(Paiement.Typepaiement.marchand_ambulant);
+
         }
 
         // =====================================================
@@ -440,6 +441,7 @@ public class PaiementService {
         dto.setMoisdePaiement(paiement.getMoisdePaiement());
         dto.setMotif(paiement.getMotif());
         if(paiement.getQuittance() !=null) dto.setRecuNumero(paiement.getQuittance().getNom());
+        if(paiement.getQuittance() !=null) dto.setQuittanceId(Math.toIntExact(paiement.getQuittance().getId()));
         dto.setNomMarchands(paiement.getNomMarchands());
         dto.setTypePaiement(paiement.getTypePaiement());
         dto.setNomAgent(paiement.getAgent().getNom());

@@ -36,7 +36,7 @@ public class SessionController {
 
     /**
      * Crée une nouvelle session avec validation JWT manuelle
-     * Accessible uniquement aux REGISSEUR et PERCEPTEUR
+     * Accessible uniquement aux REGISSEUR et PERCEPTEUR mobile
      */
     @PostMapping("/create")
     public ResponseEntity<ApiResponse<SessionCreatedResponseDTO>> createSession(

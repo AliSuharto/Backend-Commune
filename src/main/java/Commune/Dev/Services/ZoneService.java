@@ -1,8 +1,6 @@
 package Commune.Dev.Services;
 
-import Commune.Dev.Dtos.ZoneDTO;
-import Commune.Dev.Dtos.ZoneMapper;
-import Commune.Dev.Dtos.ZoneResponse;
+import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.Halls;
 import Commune.Dev.Models.Marchee;
 import Commune.Dev.Models.Place;
@@ -71,6 +69,69 @@ public class ZoneService {
         return zones.stream()
                 .map(this::mapZoneToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<ZoneDTOnomComplet> findAllNomComplet() {
+
+        List<Zone> zones = zoneRepository.findAllWithMarchee();
+
+        // Mapper chaque zone en DTO avec tous les calculs
+        return zones.stream()
+                .map(this::mapZoneToDTOnomComplet)
+                .collect(Collectors.toList());
+    }
+
+
+    /**
+     * Mappe une Zone en ZoneDTOnomComplet avec nom complet incluant le marché
+     */
+    private ZoneDTOnomComplet mapZoneToDTOnomComplet(Zone zone) {
+        // Calcul du nombre de halls
+        int nbrHall = calculateNombreHalls(zone);
+
+        // Récupération de toutes les places (zone + halls)
+        List<Place> toutesLesPlaces = getAllPlaces(zone);
+
+        // Calculs des places
+        int nbrPlaceTotal = toutesLesPlaces.size();
+        int nbrPlaceLibre = calculatePlacesLibres(toutesLesPlaces);
+        int nbrPlaceOccupee = calculatePlacesOccupees(toutesLesPlaces);
+
+        // Construire le nom complet avec le marché
+        String nomComplet = zone.getNom();
+        if (zone.getMarchee() != null) {
+            nomComplet += " (marché " + zone.getMarchee().getNom() + ")";
+        }
+
+        // Récupérer les utilisateurs associés (si nécessaire)
+        List<UserDtoZone> users = null;
+        if (zone.getUsers() != null) {
+            users = zone.getUsers().stream()
+                    .map(user -> {
+                        // Mapper vos utilisateurs selon votre UserDtoZone
+                        UserDtoZone userDto = new UserDtoZone();
+
+                        userDto.setNom(user.getNom());
+                        userDto.setPrenom(user.getPrenom());
+                        // Ajouter les autres champs nécessaires
+                        return userDto;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        // Créer et retourner le DTO
+        return ZoneDTOnomComplet.builder()
+                .id(zone.getId())
+                .nom(nomComplet)  // Nom complet avec le marché
+                .marcheeId(zone.getMarchee() != null ? zone.getMarchee().getId() : null)
+                .nomMarchee(zone.getMarchee() != null ? zone.getMarchee().getNom() : null)
+                .nbrHall(nbrHall)
+                .nbrPlace(nbrPlaceTotal)
+                .nbrPlaceLibre(nbrPlaceLibre)
+                .nbrPlaceOccupee(nbrPlaceOccupee)
+                .users(users)
+                .build();
     }
 
     /**
@@ -146,23 +207,6 @@ public class ZoneService {
                 .count();
     }
 
-//    @Transactional
-//    public ZoneDTO create(Zone zone) {
-//        Zone savedZone = zoneRepository.save(zone);
-//        return zoneMapper.toDTO(savedZone);
-//    }
-
-//    @Transactional
-//    public ZoneDTO update(Long id, Zone zoneDetails) {
-//        Zone zone = zoneRepository.findById(Math.toIntExact(id))
-//                .orElseThrow(() -> new RuntimeException("Zone non trouvée avec l'id: " + id));
-//
-//        zone.setNom(zoneDetails.getNom());
-//        zone.setDescription(zoneDetails.getDescription());
-//
-//        Zone updatedZone = zoneRepository.save(zone);
-//        return zoneMapper.toDTO(updatedZone);
-//    }
 
     @Transactional
     public void delete(Long id) {

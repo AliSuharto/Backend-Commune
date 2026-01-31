@@ -167,6 +167,15 @@ public class SalleServiceImpl implements SalleService {
                 .collect(Collectors.toList());
     }
 
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SalleResponseDTO> findAlls() {
+        return salleRepository.findAll().stream()
+                .map(this::mapToResponseDTOs)
+                .collect(Collectors.toList());
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<SalleResponseDTO> findAllByMarchee(Integer marcheeId) {
@@ -332,14 +341,57 @@ public class SalleServiceImpl implements SalleService {
                 dto.setMarcheeNom(halls.getZone().getMarchee().getNom());
             }
         }
+      return dto;
+    }
+    private SalleResponseDTO mapToResponseDTOs(Halls halls) {
+        SalleResponseDTO dtos = new SalleResponseDTO();
+        dtos.setId(Math.toIntExact(halls.getId()));
+
+        // Construire le nom complet avec le contexte
+        String nomComplet = halls.getNom();
+
+        dtos.setDescription(halls.getDescription());
+
+        // Déterminer le type d'emplacement et les informations
+        if (halls.getMarchee() != null && halls.getZone() == null) {
+            // Salle directement dans un marché
+            dtos.setEmplacementType("MARCHE_DIRECT");
+            dtos.setMarcheeId(Math.toIntExact(halls.getMarchee().getId()));
+            dtos.setMarcheeNom(halls.getMarchee().getNom());
+
+            // Ajouter le contexte au nom : Hall280 (marché Bazarikely)
+            nomComplet += " (marché " + halls.getMarchee().getNom() + ")";
+
+        } else if (halls.getZone() != null && halls.getMarchee() == null) {
+            // Salle dans une zone
+            dtos.setEmplacementType("ZONE");
+            dtos.setZoneId(Math.toIntExact(halls.getZone().getId()));
+            dtos.setZoneNom(halls.getZone().getNom());
+
+            // Le marché est accessible via la zone
+            if (halls.getZone().getMarchee() != null) {
+                dtos.setMarcheeId(Math.toIntExact(halls.getZone().getMarchee().getId()));
+                dtos.setMarcheeNom(halls.getZone().getMarchee().getNom());
+
+                // Ajouter le contexte au nom : Hall280 (zone A du marché Bazarikely)
+                nomComplet += " (zone " + halls.getZone().getNom() +
+                        " du marché " + halls.getZone().getMarchee().getNom() + ")";
+            } else {
+                // Si pas de marché (cas anormal mais on gère)
+                nomComplet += " (zone " + halls.getZone().getNom() + ")";
+            }
+        }
+
+        // Définir le nom complet
+        dtos.setNom(nomComplet);
 
         // Count places if available
         if (halls.getPlaces() != null) {
-            dto.setNbrPlaces((long) halls.getPlaces().size());
+            dtos.setNbrPlaces((long) halls.getPlaces().size());
         } else {
-            dto.setNbrPlaces(salleRepository.countPlacesBySalleId(Math.toIntExact(halls.getId())));
+            dtos.setNbrPlaces(salleRepository.countPlacesBySalleId(Math.toIntExact(halls.getId())));
         }
 
-        return dto;
+        return dtos;
     }
 }

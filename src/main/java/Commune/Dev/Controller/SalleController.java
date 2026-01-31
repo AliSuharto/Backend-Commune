@@ -79,6 +79,12 @@ public class SalleController {
         return ResponseEntity.ok(salles);
     }
 
+    @GetMapping("/alls")
+    public ResponseEntity<List<SalleResponseDTO>> getAllSalleNomComplet() {
+        List<SalleResponseDTO> salles = salleService.findAlls();
+        return ResponseEntity.ok(salles);
+    }
+
     @GetMapping("/marchee/{marcheeId}")
     public ResponseEntity<List<SalleResponseDTO>> getAllSallesByMarchee(@PathVariable Integer marcheeId) {
         List<SalleResponseDTO> salles = salleService.findAllByMarchee(marcheeId);

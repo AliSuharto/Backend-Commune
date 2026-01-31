@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -201,25 +202,55 @@ public class SyncService {
 
         log.info("👥 Marchands trouvés: {}", marchands.size());
 
-        // 8. Charger tous les paiements liés à ces places et marchands
-        List<Paiement> paiements = new ArrayList<>();
+        // 8. Charger les sessions de l'utilisateur
+        List<Session> sessions = sessionRepository.findByUserId(userId);
+
+        response.setSessions(
+                sessions.stream()
+                        .map(this::mapSessionToData)
+                        .collect(Collectors.toList())
+        );
+
+        log.info("📅 Sessions trouvées pour l'utilisateur {} : {}", userId, sessions.size());
+
+        // 9. Récupérer les IDs des sessions
+        Set<Long> sessionIds = sessions.stream()
+                .map(Session::getId)
+                .collect(Collectors.toSet());
+
+        // 10. Charger tous les paiements liés à ces places, marchands ET sessions
+        Set<Paiement> paiementsSet = new HashSet<>();
+
+        // Paiements par place
         if (!placeIds.isEmpty()) {
-            paiements.addAll(paiementRepository.findByPlaceIdIn(new ArrayList<>(placeIds)));
-        }
-        if (!marchandIds.isEmpty()) {
-            paiements.addAll(paiementRepository.findByMarchandIdIn(new ArrayList<>(marchandIds)));
+            paiementsSet.addAll(paiementRepository.findByPlaceIdIn(new ArrayList<>(placeIds)));
+            log.info("💰 Paiements trouvés par place: {}", paiementsSet.size());
         }
 
-        // Dédupliquer les paiements
-        paiements = paiements.stream().distinct().collect(Collectors.toList());
+        // Paiements par marchand
+        if (!marchandIds.isEmpty()) {
+            List<Paiement> paiementsMarchand = (List<Paiement>) paiementRepository.findByMarchandIdIn(new ArrayList<>(marchandIds));
+            paiementsSet.addAll(paiementsMarchand);
+            log.info("💰 Paiements trouvés par marchand: {}", paiementsMarchand.size());
+        }
+
+        // Paiements par session (IMPORTANT pour les paiements manuels sans marchand)
+        if (!sessionIds.isEmpty()) {
+            List<Paiement> paiementsSession = paiementRepository.findBySessionIdIn(new ArrayList<>(sessionIds));
+            paiementsSet.addAll(paiementsSession);
+            log.info("💰 Paiements trouvés par session: {}", paiementsSession.size());
+        }
+
+        // Convertir le Set en List (déjà dédupliqué automatiquement)
+        List<Paiement> paiements = new ArrayList<>(paiementsSet);
 
         response.setPaiements(paiements.stream()
                 .map(this::mapPaiementToData)
                 .collect(Collectors.toList()));
 
-        log.info("💰 Paiements trouvés: {}", paiements.size());
+        log.info("💰 Total paiements uniques trouvés: {}", paiements.size());
 
-        // 9. Charger les quittances de l'utilisateur (percepteur)
+        // 11. Charger les quittances de l'utilisateur (percepteur)
         List<Quittance> quittances = quittanceRepository.findByPercepteurId(userId);
 
         response.setQuittances(
@@ -229,17 +260,6 @@ public class SyncService {
         );
 
         log.info("🧾 Quittances trouvées pour l'utilisateur {} : {}", userId, quittances.size());
-
-        List<Session> sessions = sessionRepository.findByUserId(userId);
-
-        response.setSessions(
-                sessions.stream()
-                        .map(this::mapSessionToData)
-                        .collect(Collectors.toList())
-        );
-
-        log.info("Sessions trouver pour l'utilisateur{}:{}", userId, sessions.size());
-
 
         log.info("✅ Synchronisation terminée pour l'utilisateur ID: {}", userId);
 
@@ -342,9 +362,11 @@ public class SyncService {
                 paiement.getDatePaiement(),
                 paiement.getMotif(),
                 paiement.getMarchand() != null ? paiement.getMarchand().getId() : null,
+                paiement.getNomMarchands(),
                 paiement.getPlace() != null ? paiement.getPlace().getId() : null,
                 Math.toIntExact(paiement.getSession() != null ? paiement.getSession().getId() : null),
                 paiement.getAgent() != null ? paiement.getAgent().getId() : null,
+                paiement.getQuittance()!=null?paiement.getQuittance().getId(): null,
                 paiement.getDateDebut() != null ? paiement.getDateDebut().toString() : null,
                 paiement.getDateFin() != null ? paiement.getDateFin().toString() : null
         );
@@ -389,7 +411,9 @@ public class SyncService {
 
                 session.getValidation_date()
         );
+
     }
 
-
+    private static final DateTimeFormatter SQLITE_DATETIME =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 }

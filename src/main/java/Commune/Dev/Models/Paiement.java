@@ -30,6 +30,7 @@ public class Paiement {
 
     private String motif;
 
+    @Enumerated(EnumType.STRING)
     private Typepaiement typePaiement;
 
     @NotNull(message = "Le montant est obligatoire")
@@ -103,7 +104,8 @@ public class Paiement {
     }
     public enum Typepaiement{
         droit_annuel,
-        droit_place
+        droit_place,
+        marchand_ambulant
     }
 
 

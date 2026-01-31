@@ -137,4 +137,7 @@ public interface PaiementRepository extends JpaRepository<Paiement, Integer> {
             LocalDateTime start,
             LocalDateTime end
     );
+
+    // Recherche par session (NOUVELLE MÉTHODE)
+    List<Paiement> findBySessionIdIn(List<Long> sessionIds);
 }

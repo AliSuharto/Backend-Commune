@@ -122,9 +122,11 @@ public class SyncDataResponse {
         private LocalDateTime datePaiement;
         private String motif;
         private Integer marchandId;
+        private String marchandNom;
         private Integer placeId;
         private Integer sessionId;
         private Long agentId;
+        private Long quittanceId;
         private String dateDebut;
         private String dateFin;
     }

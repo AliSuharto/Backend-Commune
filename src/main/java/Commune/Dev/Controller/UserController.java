@@ -61,6 +61,12 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
+    @GetMapping("/percepteur")
+    public ResponseEntity<List<UserResponsePercepteur>> getPercepteur() {
+        List<UserResponsePercepteur> users = userService.getPercepteur();
+        return ResponseEntity.ok(users);
+    }
+
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('DIRECTEUR')")
