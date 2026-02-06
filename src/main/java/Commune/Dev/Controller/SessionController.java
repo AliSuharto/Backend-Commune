@@ -167,7 +167,6 @@ public class SessionController {
 
     @GetMapping("/dashboard/{userId}")
     public ResponseEntity<RegisseurDashboardDTO> getDashboardByUserId(@PathVariable Integer userId) {
-        // Endpoint pour les admins qui veulent voir le dashboard d'un régisseur spécifique
         RegisseurDashboardDTO dashboard = regisseurDashboardService.getDashboardData(userId);
         return ResponseEntity.ok(dashboard);
     }
