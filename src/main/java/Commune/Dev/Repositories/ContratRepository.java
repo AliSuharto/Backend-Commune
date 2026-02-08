@@ -58,6 +58,14 @@ public interface ContratRepository extends JpaRepository<Contrat, Integer> {
 
     // Ou plus précis :
 
+    @Query("SELECT c FROM Contrat c " +
+            "JOIN c.place p " +
+            "WHERE p.marchee.id = :marcheeId AND c.isActif = :isActif")
+    List<Contrat> findByMarcheeIdAndIsActif(@Param("marcheeId") Long marcheeId,
+                                            @Param("isActif") Boolean isActif);
+
+    List<Contrat> findByIdPlaceInAndIsActif(List<Integer> placeIds, Boolean isActif);
+
 
 }
 

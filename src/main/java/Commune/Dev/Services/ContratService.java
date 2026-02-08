@@ -212,6 +212,9 @@ public class ContratService {
 
                 placeDTO.setId(place.getId());
                 placeDTO.setNom(safe(place.getNom()));
+                if(place.getCategorie() !=null) {
+                    placeDTO.setCategorieName(safe(String.valueOf(place.getCategorie().getNom())));
+                }
 
                 String salleName = "";
                 String zoneName = "";
@@ -270,6 +273,7 @@ public class ContratService {
                 placeDTO.setSalleName(salleName);
                 placeDTO.setZoneName(zoneName);
                 placeDTO.setMarcheeName(marcheeName);
+
 
                 dto.getPlaces().add(placeDTO);
             }

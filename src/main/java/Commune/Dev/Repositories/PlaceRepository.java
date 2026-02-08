@@ -145,4 +145,26 @@ public interface PlaceRepository extends JpaRepository<Place, Integer> {
     List<Place> findByMarcheeIdIn(List<Long> marcheeIds);
     List<Place> findByZoneIdIn(List<Long> zoneIds);
     List<Place> findByHallIdIn(List<Long> hallIds);
+    @Query("SELECT DISTINCT p FROM Place p " +
+            "LEFT JOIN p.zone z " +
+            "LEFT JOIN p.hall h " +
+            "LEFT JOIN h.zone hz " +
+            "WHERE p.marchee.id = :marcheeId " +
+            "   OR z.marchee.id = :marcheeId " +
+            "   OR h.marchee.id = :marcheeId " +
+            "   OR hz.marchee.id = :marcheeId")
+    List<Place> findAllByMarcheeIdRecursive(@Param("marcheeId") Long marcheeId);
+
+    /**
+     * Récupère toutes les places d'une zone :
+     * 1. Places directes (place.zone_id = zoneId)
+     * 2. Places dans halls de cette zone (hall.zone_id = zoneId)
+     */
+    @Query("SELECT DISTINCT p FROM Place p " +
+            "LEFT JOIN p.hall h " +
+            "WHERE p.zone.id = :zoneId " +
+            "   OR h.zone.id = :zoneId")
+    List<Place> findAllByZoneIdRecursive(@Param("zoneId") Long zoneId);
+
+
 }

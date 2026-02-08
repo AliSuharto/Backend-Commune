@@ -140,4 +140,12 @@ public interface PaiementRepository extends JpaRepository<Paiement, Integer> {
 
     // Recherche par session (NOUVELLE MÉTHODE)
     List<Paiement> findBySessionIdIn(List<Long> sessionIds);
+
+
+
+    List<Paiement> findByMarchandIdInAndDatePaiementBetween(
+            List<Integer> marchandIds,
+            LocalDateTime dateDebut,
+            LocalDateTime dateFin
+    );
 }
