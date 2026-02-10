@@ -86,6 +86,8 @@ public class SessionMapper {
                      ?paiement.getMarchand().getActivite().toString():null);
         }
 
+        dto.setNomMarchands(paiement.getNomMarchands());
+
         if (paiement.getAgent() != null) {
             dto.setNomAgent(paiement.getAgent().getNom());
             dto.setIdAgent(paiement.getAgent().getId() != null

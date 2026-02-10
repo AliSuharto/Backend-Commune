@@ -204,6 +204,7 @@ public class MarchandsService {
             marchand.setNIF(nif);
             marchand.setSTAT(stat);
             marchand.setIsCarteGenerer(false);
+            marchand.setStatut(StatutMarchands.A_JOUR);
 
             // SAUVEGARDE IMMÉDIATE + FLUSH pour obtenir l'ID
             Marchands savedMarchand = marchandsRepository.saveAndFlush(marchand);
@@ -728,7 +729,13 @@ public class MarchandsService {
         dto.setTelephone(marchand.getNumTel1());
         dto.setNif(marchand.getNIF());
         dto.setStat(marchand.getSTAT());
-        dto.setPlace(construireNomCompletPlace(marchand.getPlaces().getLast()));
+        if (marchand.getPlaces() != null && !marchand.getPlaces().isEmpty()) {
+            dto.setPlace(
+                    construireNomCompletPlace(marchand.getPlaces().getLast())
+            );
+        } else {
+            dto.setPlace("Aucune place attribuée");
+        }
 
         if (marchand.getContrats() == null || marchand.getContrats().isEmpty()) {
             dto.setStatut("Sans contrat");

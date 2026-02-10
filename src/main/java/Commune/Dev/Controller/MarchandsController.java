@@ -2,6 +2,7 @@ package Commune.Dev.Controller;
 
 import Commune.Dev.Dtos.*;
 import Commune.Dev.Models.Marchands;
+import Commune.Dev.Models.StatutMarchands;
 import Commune.Dev.Request.CreateMarchandRequest;
 import Commune.Dev.Services.ContratService;
 import Commune.Dev.Services.MarchandsService;
@@ -78,6 +79,8 @@ public class MarchandsController {
             marchand.setActivite(request.getActivite());
             marchand.setAdress(request.getAdress());
             marchand.setDescription(request.getDescription());
+            marchand.setStatut(StatutMarchands.A_JOUR);
+
 
             Marchands savedMarchand =
                     marchandsService.saveMarchand(marchand);
