@@ -89,11 +89,6 @@ public class SessionController {
 
 
 
-
-
-
-
-
     // Récupérer toutes les sessions
     @GetMapping
     public ResponseEntity<List<SessionDTO>> getAllSessions() {

@@ -77,6 +77,7 @@ public class SessionMapper {
         dto.setModePaiement(String.valueOf(paiement.getModePaiement()));
         dto.setMoisdePaiement(paiement.getMoisdePaiement());
         dto.setMotif(paiement.getMotif());
+        dto.setTypePaiement(paiement.getTypePaiement());
 
         if (paiement.getMarchand() != null) {
             dto.setNomMarchands(paiement.getMarchand().getNom());
