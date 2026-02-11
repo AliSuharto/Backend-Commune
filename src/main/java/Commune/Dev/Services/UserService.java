@@ -38,7 +38,7 @@ public class UserService {
 
     @Transactional
     public UserResponse createUser(CreateUserRequest request, User createdBy) {
-        // Seul l'ORDONNATEUR peut créer des utilisateurs
+        // Seul l'ORDONNATEUR et Directeur peut créer des utilisateurs
         if (createdBy.getRole() != Roletype.ORDONNATEUR && createdBy.getRole() != Roletype.DIRECTEUR) {
             throw new UnauthorizedException("Seul l'ORDONNATEUR ou le DIRECTEUR peut créer des utilisateurs");
         }
@@ -96,8 +96,6 @@ public class UserService {
                 NotificationType.ACCOUNT_CREATED,
                 createdBy
         );
-
-        log.info("Utilisateur créé avec succès : {} par {}", savedUser.getEmail(), createdBy.getEmail());
 
         return convertToUserResponse(savedUser);
     }

@@ -20,7 +20,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.from}")
     private String fromEmail;
 
     @Autowired
@@ -67,7 +67,7 @@ public class EmailService {
                                     "• Ne partagez jamais votre mot de passe\n\n" +
                                     "🌐 ACCÈS AU SYSTÈME :\n" +
                                     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-                                    "URL : http://localhost:8080\n" +
+                                    "URL : https://egmc-plateforme-vpwk.vercel.app/login\n" +
                                     "Support : Contactez votre administrateur système\n\n" +
                                     "Cordialement,\n" +
                                     "🏛️ L'équipe du Système de Gestion Communale",
@@ -272,7 +272,7 @@ public class EmailService {
                     "        " +
                     (isActivated ?
                             "        <div style='text-align: center; margin: 30px 0;'>" +
-                                    "            <a href='http://localhost:4200/login' style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;'>Se connecter</a>" +
+                                    "            <a href='https://egmc-plateforme-vpwk.vercel.app/login' style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; display: inline-block;'>Se connecter</a>" +
                                     "        </div>"
                             : "") +
                     "        " +
