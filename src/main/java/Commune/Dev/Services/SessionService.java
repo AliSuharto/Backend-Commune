@@ -159,11 +159,6 @@ public SessionCreatedResponseDTO createSessionMobile(CreateSessionDTO dto) {
 
 
 
-
-
-
-
-
     /* =======================================================================
        🔥 FERMETURE MANUELLE
        ======================================================================= */
@@ -178,7 +173,7 @@ public SessionCreatedResponseDTO createSessionMobile(CreateSessionDTO dto) {
         }
 
         session.setEndTime(LocalDateTime.now());
-        session.setStatus(SessionStatus.FERMEE);
+        session.setStatus(SessionStatus.EN_VALIDATION);
 
         return sessionMapper.toDTO(sessionRepository.save(session));
     }

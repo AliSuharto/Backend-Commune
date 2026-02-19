@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgres_test:
+    image: postgres:15
+    container_name: postgres_test_db
+    restart: always
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  spring_app_test:
+    build: .
+    image: spring_app_test
+    container_name: spring_app_test
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: test
+      DATABASE_URL: jdbc:postgresql://postgres_test:5432/test_db
+      DATABASE_USERNAME: test_user
+      DATABASE_PASSWORD: test_password
+      JPA_DDL_AUTO: create
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+    networks:
+      - test-network
+    volumes:
+      - ./logs_test:/app/logs
+
+  adminer_test:
+    image: adminer
+    container_name: adminer_test
+    restart: always
+    ports:
+      - "8082:8080"
+    networks:
+      - test-network
+    depends_on:
+      - postgres_test
+
+networks:
+  test-network:
+    driver: bridge
+
